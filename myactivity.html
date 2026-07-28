@@ -1,0 +1,1029 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Queue Activity</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --line: #e4e9f2;
+      --text: #162033;
+      --muted: #657089;
+      --blue: #2563eb;
+      --green: #2f9d44;
+      --amber: #f59e0b;
+      --red: #dc2626;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(1200px 700px at 15% 0%, #eef4ff 0%, var(--bg) 45%, #f8fafc 100%);
+      color: var(--text);
+    }
+    .app {
+      min-height: 100vh;
+      padding: 10px;
+      display: flex;
+      justify-content: center;
+    }
+    .shell {
+      width: min(1600px, 100%);
+      display: grid;
+      gap: 10px;
+      min-height: calc(100vh - 20px);
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+    .topbar, .section {
+      background: rgba(255,255,255,0.82);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(228, 233, 242, 0.95);
+      border-radius: calc(var(--radius) + 4px);
+      box-shadow: var(--shadow);
+    }
+    .topbar {
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      white-space: nowrap;
+      min-height: 54px;
+    }
+    .title-wrap { display: flex; align-items: center; gap: 14px; flex: 0 0 auto; }
+    .title { font-size: 22px; line-height: 1.05; margin: 0; letter-spacing: -0.03em; }
+    .subtitle { display: none; }
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: nowrap;
+      justify-content: flex-end;
+      min-width: 0;
+      flex: 1 1 auto;
+      overflow: hidden;
+    }
+    .client-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: nowrap;
+      white-space: nowrap;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+    .client-input {
+      width: min(340px, 100%);
+      min-width: 200px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      padding: 9px 12px;
+      font: inherit;
+      color: var(--text);
+      outline: none;
+    }
+    .client-input:focus { border-color: #93c5fd; box-shadow: 0 0 0 4px rgba(59,130,246,.12); }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.9);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; background: var(--muted); }
+    .dot.green { background: #3bb54a; }
+    .dot.amber { background: var(--amber); }
+    .dot.red { background: var(--red); }
+    .icon-btn, .primary-btn, .secondary-btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 12px;
+      padding: 8px 12px;
+      font: inherit;
+      color: var(--text);
+      cursor: pointer;
+      transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+    .icon-btn:hover, .primary-btn:hover, .secondary-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 16px rgba(15,23,42,.06); }
+    .primary-btn {
+      background: linear-gradient(180deg, #3b82f6, #2563eb);
+      border-color: #2563eb;
+      color: #fff;
+      font-weight: 700;
+    }
+    .secondary-btn { background: #fff; }
+    .section {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .toolbar {
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #fff, #fbfcff);
+    }
+    .toolbar-left, .toolbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .hint { display: none; }
+    .table-wrap {
+      overflow: auto;
+      flex: 1;
+      min-height: 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 1680px;
+    }
+    thead th {
+      position: sticky;
+      top: 0;
+      background: #fff;
+      z-index: 2;
+      text-align: left;
+      font-size: 13px;
+      color: #25314a;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      white-space: nowrap;
+    }
+    tbody td {
+      border-bottom: 1px solid #edf1f7;
+      padding: 14px 16px;
+      vertical-align: middle;
+      background: #fff;
+    }
+    tbody tr:hover td { background: #fcfdff; }
+    .queue-name { font-weight: 600; display: flex; align-items: center; gap: 10px; }
+    .queue-chevron { color: #64748b; font-size: 18px; line-height: 1; flex: 0 0 auto; }
+    .queue-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 9px;
+      background: #eff6ff;
+      color: #2563eb;
+      font-size: 14px;
+      font-weight: 800;
+      flex: 0 0 auto;
+    }
+    .metric-main {
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      text-align: center;
+    }
+    .metric-green { color: var(--green); }
+    .metric-amber { color: var(--amber); }
+    .metric-red { color: var(--red); }
+    .mini-line {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .media-stack { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+    .media-line { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .media-ico { font-size: 14px; line-height: 1; }
+    .presence-cell { min-width: 340px; }
+    .presence-summary { display: grid; gap: 8px; }
+    .presence-labels {
+      display: grid;
+      gap: 5px;
+      align-items: center;
+      font-size: 13px;
+      color: #334155;
+      max-width: 100%;
+    }
+    .presence-item { display: grid; grid-template-columns: 10px 1fr auto; gap: 8px; align-items: center; white-space: nowrap; }
+    .presence-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .presence-dot.available { background: #62b246; }
+    .presence-dot.busy { background: #f59e0b; }
+    .presence-dot.notresp { background: #ef4444; }
+    .presence-label { font-weight: 500; color: #334155; }
+    .presence-count { font-weight: 500; color: #0f172a; }
+    .presence-bar {
+      height: 12px;
+      width: 180px;
+      display: flex;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #eef2f7;
+      border: 1px solid #e6ebf3;
+    }
+    .seg.available { background: linear-gradient(90deg, #6bbf59, #43a047); }
+    .seg.busy { background: linear-gradient(90deg, #f8c34d, #f59e0b); }
+    .seg.notresp { background: linear-gradient(90deg, #f56565, #dc2626); }
+    .tiny { font-size: 12px; color: var(--muted); }
+    .health { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; }
+    .health .pill-dot { width: 10px; height: 10px; border-radius: 50%; background: #999; }
+    .health.good { color: var(--green); }
+    .health.warn { color: var(--amber); }
+    .health.bad { color: var(--red); }
+    .health.good .pill-dot { background: var(--green); }
+    .health.warn .pill-dot { background: var(--amber); }
+    .health.bad .pill-dot { background: var(--red); }
+    .service-cell { text-align: center; }
+    .service-main { font-size: 20px; font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
+    .service-main.green { color: var(--green); }
+    .service-main.amber { color: var(--amber); }
+    .service-main.red { color: var(--red); }
+    .service-sub { margin-top: 6px; color: var(--muted); font-size: 13px; }
+    .center-cell { text-align: center; font-weight: 500; }
+    .queue-meta { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .queue-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .row-actions { display: flex; justify-content: center; }
+    .action-btn { border: 0; background: transparent; color: #64748b; font-size: 22px; line-height: 1; cursor: pointer; padding: 0 4px; }
+    .footerbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 10px 14px;
+      background: linear-gradient(180deg, #fff, #fbfcff);
+      border-top: 1px solid var(--line);
+    }
+    .pager { display: flex; align-items: center; gap: 8px; }
+    .page-btn {
+      min-width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: #fff;
+      cursor: pointer;
+      font: inherit;
+    }
+    .page-btn.active { background: #2563eb; border-color: #2563eb; color: #fff; font-weight: 700; }
+    .notice, .error {
+      margin: 16px 20px 0;
+      padding: 14px 16px;
+      border-radius: 14px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .notice { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; }
+    .error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; white-space: pre-wrap; }
+    .empty {
+      padding: 28px 18px;
+      color: var(--muted);
+      text-align: center;
+    }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(15, 23, 42, 0.42);
+      backdrop-filter: blur(6px);
+      z-index: 50;
+      padding: 20px;
+    }
+    .overlay.show { display: flex; }
+    .modal {
+      width: min(520px, 100%);
+      background: #fff;
+      border-radius: 22px;
+      box-shadow: 0 30px 60px rgba(15,23,42,.22);
+      border: 1px solid rgba(226,232,240,.9);
+      padding: 22px;
+    }
+    .modal h2 { margin: 0 0 8px; }
+    .modal p { color: var(--muted); margin: 0 0 16px; line-height: 1.5; }
+    @media (max-width: 900px) {
+      .title { font-size: 20px; }
+      .client-input { width: 260px; }
+      .topbar { min-height: 50px; }
+    }
+    @media (max-width: 720px) {
+      .app { padding: 8px; }
+      table { min-width: 1100px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="shell">
+      <header class="topbar">
+        <div class="title-wrap">
+          <h1 class="title">My Queue Activity</h1>
+        </div>
+        <div class="status-row">
+          <div class="client-group">
+            <label class="tiny" for="clientId" style="margin-right:4px; color: var(--muted);">Client ID</label>
+            <input class="client-input" id="clientId" placeholder="Paste Genesys Cloud OAuth Client ID" autocomplete="off" />
+            <button class="primary-btn" id="connectBtn">Connect</button>
+          </div>
+          <span class="pill" id="lastUpdatedPill"><span class="dot"></span>Not connected</span>
+          <button class="secondary-btn" id="refreshBtn" title="Refresh">Refresh</button>
+          <button class="secondary-btn" id="logoutBtn" title="Clear tokens">Logout</button>
+        </div>
+      </header>
+
+      <section class="section" id="mainSection">
+        <div id="banner"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Queue Name</th>
+                <th>Waiting</th>
+                <th>Interactions</th>
+                <th>Service Level %<br><span class="tiny">(Interval/Day)</span></th>
+                <th>On Queue</th>
+                <th>Off Queue</th>
+                <th>Presence Breakdown <span class="tiny">ⓘ</span></th>
+                <th>Interacting</th>
+                <th>Communicating</th>
+                <th>Idle</th>
+                <th>Not Responding</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <div class="footerbar">
+          <div class="tiny" id="footerText">Enter a Client ID and connect.</div>
+          <div class="pager" id="pager"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <h2>Signing in...</h2>
+      <p id="overlayText">Opening Genesys Cloud authorization flow.</p>
+      <div class="hint">If a popup is blocked, allow popups for this page and try again.</div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'genesys.queue.activity.pkce.config.v2';
+    const TOKEN_KEY = 'genesys.queue.activity.pkce.token.v2';
+    const VERIFIER_KEY = 'genesys.queue.activity.pkce.verifier.v2';
+    const STATE_KEY = 'genesys.queue.activity.pkce.state.v2';
+
+    const LOGIN_HOST = 'login.euw2.pure.cloud';
+    const API_HOST = 'api.euw2.pure.cloud';
+    const PAGE_SIZE = 20;
+    const REFRESH_MS = 30000;
+    const MEDIA_TYPES = ['voice', 'email'];
+
+    const el = (id) => document.getElementById(id);
+
+    const state = {
+      token: null,
+      me: null,
+      queues: [],
+      observationsByQueue: new Map(),
+      mediaByQueue: new Map(),
+      serviceLevelsByQueue: new Map(),
+      page: 1,
+      refreshTimer: null,
+      loading: false,
+      lastRefresh: null,
+    };
+
+    const DEFAULTS = {
+      clientId: '',
+      redirectUri: window.location.href.split('?')[0].split('#')[0],
+    };
+
+    function loadConfig() {
+      try {
+        return { ...DEFAULTS, ...(JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')) };
+      } catch {
+        return { ...DEFAULTS };
+      }
+    }
+
+    function saveConfig(cfg) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+    }
+
+    function applyConfigToForm() {
+      const cfg = loadConfig();
+      el('clientId').value = cfg.clientId || '';
+    }
+
+    function saveClientId() {
+      const cfg = loadConfig();
+      cfg.clientId = el('clientId').value.trim();
+      cfg.redirectUri = DEFAULTS.redirectUri;
+      saveConfig(cfg);
+      return cfg;
+    }
+
+    function setBanner(html, kind = 'notice') {
+      const banner = el('banner');
+      if (!html) {
+        banner.innerHTML = '';
+        return;
+      }
+      banner.innerHTML = `<div class="${kind}">${html}</div>`;
+    }
+
+    function setOverlay(show, text) {
+      if (text) el('overlayText').textContent = text;
+      el('overlay').classList.toggle('show', !!show);
+    }
+
+    function setConnectionPill(text, status = 'neutral') {
+      const dotClass = status === 'good' ? 'green' : status === 'warn' ? 'amber' : '';
+      el('lastUpdatedPill').innerHTML = `<span class="dot ${dotClass}"></span>${text}`;
+    }
+
+    function base64UrlEncode(buffer) {
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+      return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+    }
+
+    function randomString(length = 64) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+      const arr = new Uint8Array(length);
+      crypto.getRandomValues(arr);
+      return Array.from(arr, (x) => chars[x % chars.length]).join('');
+    }
+
+    async function sha256(plain) {
+      const data = new TextEncoder().encode(plain);
+      return crypto.subtle.digest('SHA-256', data);
+    }
+
+    async function createPkcePair() {
+      const verifier = randomString(96);
+      const hash = await sha256(verifier);
+      const challenge = base64UrlEncode(hash);
+      return { verifier, challenge };
+    }
+
+    function buildAuthUrl(cfg, challenge, stateValue) {
+      const url = new URL(`https://${LOGIN_HOST}/oauth/authorize`);
+      url.searchParams.set('response_type', 'code');
+      url.searchParams.set('client_id', cfg.clientId);
+      url.searchParams.set('redirect_uri', cfg.redirectUri);
+      url.searchParams.set('code_challenge', challenge);
+      url.searchParams.set('code_challenge_method', 'S256');
+      url.searchParams.set('state', stateValue);
+      return url.toString();
+    }
+
+    async function exchangeCodeForToken({ cfg, code, verifier }) {
+      const body = new URLSearchParams();
+      body.set('grant_type', 'authorization_code');
+      body.set('client_id', cfg.clientId);
+      body.set('code', code);
+      body.set('redirect_uri', cfg.redirectUri);
+      body.set('code_verifier', verifier);
+      body.set('code_challenge_method', 'S256');
+
+      const res = await fetch(`https://${LOGIN_HOST}/oauth/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error((data && (data.message || data.error_description || data.error)) || `Token exchange failed (${res.status})`);
+      }
+      return data;
+    }
+
+    function authHeaders() {
+      if (!state.token?.access_token) throw new Error('Not authenticated.');
+      return {
+        Authorization: `Bearer ${state.token.access_token}`,
+        'Content-Type': 'application/json',
+      };
+    }
+
+    async function apiFetch(path, options = {}) {
+      const res = await fetch(`https://${API_HOST}${path}`, {
+        ...options,
+        headers: {
+          ...authHeaders(),
+          ...(options.headers || {}),
+        },
+      });
+      const text = await res.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+      if (!res.ok) {
+        const msg = data?.message || data?.error || data?.error_description || (typeof data === 'string' ? data : '') || `Request failed (${res.status})`;
+        throw new Error(msg);
+      }
+      return data;
+    }
+
+    async function getAllPages(path) {
+      let pageNumber = 1;
+      const all = [];
+      while (true) {
+        const sep = path.includes('?') ? '&' : '?';
+        const res = await apiFetch(`${path}${sep}pageSize=100&pageNumber=${pageNumber}`);
+        const entities = res.entities || res.users || res.results || [];
+        all.push(...entities);
+        if (res.nextUri) {
+          pageNumber += 1;
+          continue;
+        }
+        if (typeof res.pageCount === 'number' && typeof res.pageNumber === 'number' && res.pageNumber < res.pageCount) {
+          pageNumber = res.pageNumber + 1;
+          continue;
+        }
+        break;
+      }
+      return all;
+    }
+
+    async function getMe() {
+      return apiFetch('/api/v2/users/me');
+    }
+
+    async function getMemberQueuesForUser(userId) {
+      const queues = await getAllPages('/api/v2/routing/queues');
+      const selected = [];
+      for (const queue of queues) {
+        if (!queue?.id || !queue?.name) continue;
+        const members = await getAllPages(`/api/v2/routing/queues/${queue.id}/users`);
+        const memberIds = members.map((m) => m.id || m.userId).filter(Boolean);
+        if (memberIds.includes(userId)) selected.push({ id: queue.id, name: queue.name });
+      }
+      return selected.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    function queueClause(queueIds) {
+      return {
+        type: 'or',
+        predicates: queueIds.map((id) => ({ dimension: 'queueId', value: id })),
+      };
+    }
+
+    async function queryQueueObservations(queueIds) {
+      if (!queueIds.length) return { statuses: new Map(), media: new Map(), serviceLevels: new Map() };
+      const statusBody = {
+        metrics: ['oUserRoutingStatuses', 'oOnQueueUsers', 'oOffQueueUsers', 'oMemberUsers', 'oActiveUsers'],
+        filter: { type: 'and', clauses: [queueClause(queueIds)] },
+      };
+      const mediaBody = {
+        metrics: ['oWaiting', 'oInteracting'],
+        filter: {
+          type: 'and',
+          clauses: [
+            queueClause(queueIds),
+            { type: 'or', predicates: MEDIA_TYPES.map((m) => ({ dimension: 'mediaType', value: m })) },
+          ],
+        },
+      };
+      const now = new Date();
+      const startOfDay = new Date(now);
+      startOfDay.setHours(0, 0, 0, 0);
+      const serviceBody = {
+        interval: `${startOfDay.toISOString()}/${now.toISOString()}`,
+        granularity: 'P1D',
+        groupBy: ['queueId'],
+        metrics: ['oServiceLevel'],
+        filter: queueClause(queueIds),
+      };
+      const [statusResp, mediaResp, serviceResp] = await Promise.all([
+        apiFetch('/api/v2/analytics/queues/observations/query', { method: 'POST', body: JSON.stringify(statusBody) }),
+        apiFetch('/api/v2/analytics/queues/observations/query', { method: 'POST', body: JSON.stringify(mediaBody) }),
+        apiFetch('/api/v2/analytics/conversations/aggregates/query', { method: 'POST', body: JSON.stringify(serviceBody) }),
+      ]);
+
+      const statuses = new Map();
+      for (const r of statusResp.results || []) {
+        const queueId = r.group?.queueId;
+        if (!queueId) continue;
+        const bucket = statuses.get(queueId) || {
+          metrics: { onQueue: 0, offQueue: 0, interacting: 0, communicating: 0, idle: 0, notResponding: 0 },
+          presence: { available: 0, busy: 0, notResponding: 0 },
+        };
+        for (const item of r.data || []) {
+          const metric = item.metric;
+          const qualifier = String(item.qualifier || '').toUpperCase();
+          const count = Number(item.stats?.count ?? item.count ?? 0);
+          if (metric === 'oMemberUsers') bucket.metrics.memberUsers = count;
+          if (metric === 'oActiveUsers') bucket.metrics.activeUsers = count;
+          if (metric === 'oOffQueueUsers') bucket.metrics.offQueue = count;
+          if (metric === 'oOnQueueUsers') {
+            bucket.metrics.onQueue += count;
+            if (qualifier === 'COMMUNICATING' || qualifier === 'BUSY') bucket.metrics.communicating += count;
+            else if (qualifier === 'INTERACTING') bucket.metrics.interacting += count;
+            else if (qualifier === 'IDLE') bucket.metrics.idle += count;
+            else if (qualifier === 'NOT_RESPONDING') bucket.metrics.notResponding += count;
+            else if (qualifier === 'AVAILABLE' || qualifier === 'ON_QUEUE') bucket.presence.available += count;
+          }
+          if (metric === 'oUserRoutingStatuses') {
+            if (qualifier === 'COMMUNICATING' || qualifier === 'BUSY') bucket.metrics.communicating += count;
+            else if (qualifier === 'INTERACTING') bucket.metrics.interacting += count;
+            else if (qualifier === 'IDLE') bucket.metrics.idle += count;
+            else if (qualifier === 'NOT_RESPONDING') bucket.metrics.notResponding += count;
+          }
+          if (metric === 'oOffQueueUsers') {
+            bucket.metrics.offQueue += count;
+            if (qualifier === 'AVAILABLE' || qualifier === 'IDLE' || qualifier === 'ON_QUEUE') bucket.presence.available += count;
+            else if (qualifier === 'COMMUNICATING' || qualifier === 'BUSY') bucket.presence.busy += count;
+            else if (qualifier === 'NOT_RESPONDING') bucket.presence.notResponding += count;
+          }
+        }
+        statuses.set(queueId, bucket);
+      }
+
+      const media = new Map();
+      for (const r of mediaResp.results || []) {
+        const queueId = r.group?.queueId;
+        if (!queueId) continue;
+        const mediaType = String(r.group?.mediaType || 'unknown').toLowerCase();
+        const bucket = media.get(queueId) || { waiting: {}, interactions: {} };
+        for (const item of r.data || []) {
+          const count = item.stats?.count ?? item.count ?? 0;
+          if (item.metric === 'oWaiting') bucket.waiting[mediaType] = count;
+          if (item.metric === 'oInteracting') bucket.interactions[mediaType] = count;
+        }
+        media.set(queueId, bucket);
+      }
+
+      const serviceLevels = new Map();
+      for (const r of serviceResp.results || []) {
+        const queueId = r.group?.queueId;
+        if (!queueId) continue;
+        const bucket = serviceLevels.get(queueId) || { ratio: null, target: null, numerator: null, denominator: null };
+        for (const interval of r.data || []) {
+          for (const item of interval.metrics || []) {
+            if (item.metric !== 'oServiceLevel') continue;
+            const stats = item.stats || {};
+            bucket.ratio = stats.ratio ?? bucket.ratio;
+            bucket.target = stats.target ?? bucket.target;
+            bucket.numerator = stats.numerator ?? bucket.numerator;
+            bucket.denominator = stats.denominator ?? bucket.denominator;
+          }
+        }
+        serviceLevels.set(queueId, bucket);
+      }
+
+      return { statuses, media, serviceLevels };
+    }
+
+    function sumMedia(bucket, key) {
+      return Object.values(bucket?.[key] || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+    }
+
+    function presenceVisual(p) {
+      const available = Number(p?.available || 0);
+      const busy = Number(p?.busy || 0);
+      const notResponding = Number(p?.notResponding || 0);
+      const total = Math.max(available + busy + notResponding, 0);
+      const items = [
+        { label: 'Available', count: available, cls: 'available' },
+        { label: 'Busy', count: busy, cls: 'busy' },
+        { label: 'Not Responding', count: notResponding, cls: 'notresp' },
+      ];
+      const denom = total || 1;
+      const labels = items.map((x) => `<div class="presence-item"><span class="presence-dot ${x.cls}"></span><span class="presence-label">${x.label}</span><span class="presence-count">${x.count}</span></div>`).join('');
+      const bar = total
+        ? items.map((x) => `<div class="seg ${x.cls}" style="width:${Math.max((x.count / denom) * 100, 2)}%" title="${x.label}: ${x.count}"></div>`).join('')
+        : '<div class="seg available" style="width:100%"></div>';
+      return { labels, bar };
+    }
+
+    function serviceLevelVisual(level) {
+      const ratio = Number(level?.ratio);
+      if (!Number.isFinite(ratio)) {
+        return { main: '-', cls: '', sub: '-' };
+      }
+      const pct = Math.max(0, Math.min(100, Math.round(ratio * 100)));
+      const cls = pct >= 90 ? 'green' : pct >= 80 ? 'amber' : 'red';
+      return { main: `${pct}%`, cls, sub: 'Today' };
+    }
+
+    function mediaLine(mediaBucket, key) {
+      const voice = Number(mediaBucket?.[key]?.voice || 0);
+      const email = Number(mediaBucket?.[key]?.email || 0);
+      return `<div class="media-stack"><div class="media-line"><span class="media-ico">📞</span><strong>${voice}</strong></div><div class="media-line"><span class="media-ico">✉</span><strong>${email}</strong></div></div>`;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function renderPager(totalPages) {
+      const pager = el('pager');
+      const pages = [];
+      const maxButtons = 7;
+      let start = Math.max(1, state.page - Math.floor(maxButtons / 2));
+      let end = Math.min(totalPages, start + maxButtons - 1);
+      if (end - start + 1 < maxButtons) start = Math.max(1, end - maxButtons + 1);
+      pages.push(`<button class="page-btn" data-page="prev" ${state.page <= 1 ? 'disabled' : ''}>‹</button>`);
+      for (let p = start; p <= end; p++) pages.push(`<button class="page-btn ${p === state.page ? 'active' : ''}" data-page="${p}">${p}</button>`);
+      pages.push(`<button class="page-btn" data-page="next" ${state.page >= totalPages ? 'disabled' : ''}>›</button>`);
+      pager.innerHTML = pages.join('');
+      pager.querySelectorAll('button[data-page]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const val = btn.getAttribute('data-page');
+          if (val === 'prev') state.page = Math.max(1, state.page - 1);
+          else if (val === 'next') state.page = Math.min(totalPages, state.page + 1);
+          else state.page = Number(val);
+          render();
+        });
+      });
+    }
+
+    function render() {
+      const rows = el('rows');
+      const totalPages = Math.max(1, Math.ceil(state.queues.length / PAGE_SIZE));
+      state.page = Math.min(state.page, totalPages);
+      const start = (state.page - 1) * PAGE_SIZE;
+      const pageItems = state.queues.slice(start, start + PAGE_SIZE);
+      if (!pageItems.length) {
+        rows.innerHTML = `<tr><td colspan="12" class="empty">${state.token ? 'No member queues found for this user.' : 'Connect to Genesys Cloud to load queue data.'}</td></tr>`;
+      } else {
+        rows.innerHTML = pageItems.map((q) => {
+          const status = state.observationsByQueue.get(q.id) || { metrics: {}, presence: {} };
+          const media = state.mediaByQueue.get(q.id) || { waiting: {}, interactions: {} };
+          const service = state.serviceLevelsByQueue?.get(q.id) || {};
+          const waiting = sumMedia(media, 'waiting');
+          const interactions = sumMedia(media, 'interactions');
+          const pv = presenceVisual(status.presence || {});
+          const serviceVis = serviceLevelVisual(service);
+          const onQueue = Number(status.metrics.onQueue ?? status.metrics.activeUsers ?? 0);
+          const offQueue = Number(status.metrics.offQueue ?? status.metrics.offQueueUsers ?? status.presence?.offQueue ?? 0);
+          const interacting = Number(status.metrics.interacting ?? 0);
+          const communicating = Number(status.metrics.communicating ?? 0);
+          const idle = Number(status.metrics.idle ?? 0);
+          const notResponding = Number(status.metrics.notResponding ?? 0);
+          return `
+            <tr>
+              <td><div class="queue-name"><span class="queue-chevron">›</span><span class="queue-name-text">${escapeHtml(q.name)}</span></div></td>
+              <td>
+                <div class="metric-main ${waiting > 0 ? (waiting >= 6 ? 'metric-red' : waiting >= 3 ? 'metric-amber' : 'metric-green') : 'metric-green'}">${waiting}</div>
+                <div class="mini-line">${mediaLine(media, 'waiting')}</div>
+              </td>
+              <td>
+                <div class="metric-main ${interactions > 0 ? (interactions >= 6 ? 'metric-red' : interactions >= 3 ? 'metric-amber' : 'metric-green') : 'metric-green'}">${interactions}</div>
+                <div class="mini-line">${mediaLine(media, 'interactions')}</div>
+              </td>
+              <td class="service-cell">
+                <div class="service-main ${serviceVis.cls}">${serviceVis.main}</div>
+                <div class="service-sub">${serviceVis.sub || '-'}</div>
+              </td>
+              <td class="center-cell"><strong>${onQueue}</strong></td>
+              <td class="center-cell"><strong>${offQueue}</strong></td>
+              <td class="presence-cell">
+                <div class="presence-summary">
+                  <div class="presence-labels">${pv.labels}</div>
+                  <div class="presence-bar">${pv.bar}</div>
+                </div>
+              </td>
+              <td class="center-cell"><strong>${interacting}</strong></td>
+              <td class="center-cell"><strong>${communicating}</strong></td>
+              <td class="center-cell"><strong>${idle}</strong></td>
+              <td class="center-cell"><strong>${notResponding}</strong></td>
+              <td class="row-actions"><button class="action-btn" title="More actions" aria-label="More actions">⋮</button></td>
+            </tr>`;
+        }).join('');
+      }
+      renderPager(totalPages);
+      const updated = state.lastRefresh ? state.lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Not connected';
+      el('footerText').textContent = state.token
+        ? `${state.queues.length} queues shown. Last updated ${updated}. Auto refresh every 30 seconds.`
+        : 'Enter a Client ID and connect.';
+      if (state.loading) setConnectionPill('Refreshing...', 'warn');
+      else if (state.lastRefresh) setConnectionPill(`Live ${updated}`, 'good');
+      else if (state.token) setConnectionPill('Connected', 'good');
+      else setConnectionPill('Not connected', 'neutral');
+    }
+
+    async function loadDashboard() {
+      if (!state.token?.access_token) throw new Error('Missing access token.');
+      state.loading = true;
+      render();
+      try {
+        state.me = await getMe();
+        const queues = await getMemberQueuesForUser(state.me.id);
+        state.queues = queues;
+        const ids = queues.map((q) => q.id);
+        const { statuses, media, serviceLevels } = await queryQueueObservations(ids);
+        state.observationsByQueue = statuses;
+        state.mediaByQueue = media;
+        state.serviceLevelsByQueue = serviceLevels;
+        state.lastRefresh = new Date();
+        state.page = 1;
+        render();
+        startAutoRefresh();
+      } finally {
+        state.loading = false;
+        render();
+      }
+    }
+
+    function startAutoRefresh() {
+      if (state.refreshTimer) clearInterval(state.refreshTimer);
+      state.refreshTimer = setInterval(() => {
+        if (state.token?.access_token) loadDashboard().catch(showError);
+      }, REFRESH_MS);
+    }
+
+    function showError(err) {
+      const msg = err?.message || String(err);
+      setBanner(msg.replaceAll('<', '&lt;').replaceAll('>', '&gt;'), 'error');
+      console.error(err);
+    }
+
+    function clearError() { setBanner(''); }
+
+    async function connectGenesys() {
+      clearError();
+      const cfg = saveClientId();
+      if (!cfg.clientId) throw new Error('Please enter a Genesys Cloud Client ID.');
+      const { verifier, challenge } = await createPkcePair();
+      const oauthState = randomString(32);
+      sessionStorage.setItem(VERIFIER_KEY, verifier);
+      sessionStorage.setItem(STATE_KEY, oauthState);
+      const authUrl = buildAuthUrl(cfg, challenge, oauthState);
+      setOverlay(true, 'Opening Genesys Cloud authorization flow.');
+      const popup = window.open(authUrl, 'genesys_pkce_login', 'width=620,height=800');
+      if (!popup) {
+        setOverlay(false);
+        throw new Error('Popup blocked. Please allow popups for this page and try again.');
+      }
+      const token = await new Promise((resolve, reject) => {
+        const onMessage = (event) => {
+          if (event.origin !== window.location.origin) return;
+          if (!event.data || event.data.type !== 'genesys-pkce-token') return;
+          window.removeEventListener('message', onMessage);
+          clearInterval(fallbackTimer);
+          resolve(event.data.token);
+        };
+        window.addEventListener('message', onMessage);
+        const fallbackTimer = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(fallbackTimer);
+            window.removeEventListener('message', onMessage);
+            reject(new Error('Authentication window closed before completing sign-in.'));
+          }
+        }, 700);
+      });
+      state.token = token;
+      localStorage.setItem(TOKEN_KEY, JSON.stringify(token));
+      setOverlay(false);
+      setConnectionPill('Authenticated', 'good');
+      await loadDashboard();
+    }
+
+    async function completeAuthFromCallback(urlString) {
+      const cfg = loadConfig();
+      const url = new URL(urlString);
+      const code = url.searchParams.get('code');
+      const returnedState = url.searchParams.get('state');
+      const error = url.searchParams.get('error');
+      const errorDesc = url.searchParams.get('error_description');
+      if (error) throw new Error(errorDesc || error);
+      if (!code) throw new Error('No authorization code returned.');
+      if (returnedState !== sessionStorage.getItem(STATE_KEY)) throw new Error('State check failed.');
+      const verifier = sessionStorage.getItem(VERIFIER_KEY);
+      if (!verifier) throw new Error('Missing PKCE verifier.');
+      return exchangeCodeForToken({ cfg, code, verifier });
+    }
+
+    async function handleCallbackIfPresent() {
+      const params = new URLSearchParams(window.location.search);
+      if (!params.has('code') && !params.has('error')) return false;
+      try {
+        const token = await completeAuthFromCallback(window.location.href);
+        state.token = token;
+        localStorage.setItem(TOKEN_KEY, JSON.stringify(token));
+        if (window.opener) {
+          window.opener.postMessage({ type: 'genesys-pkce-token', token }, window.location.origin);
+          window.close();
+          return true;
+        }
+        window.history.replaceState({}, document.title, window.location.pathname);
+        await loadDashboard();
+      } catch (err) {
+        if (window.opener) {
+          window.opener.postMessage({ type: 'genesys-pkce-callback-error', error: String(err.message || err) }, window.location.origin);
+          window.close();
+          return true;
+        }
+        throw err;
+      }
+      return true;
+    }
+
+    function restoreSession() {
+      try {
+        const tokenRaw = localStorage.getItem(TOKEN_KEY);
+        if (tokenRaw) state.token = JSON.parse(tokenRaw);
+      } catch {}
+    }
+
+    function logout() {
+      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(VERIFIER_KEY);
+      sessionStorage.removeItem(STATE_KEY);
+      state.token = null;
+      state.me = null;
+      state.queues = [];
+      state.observationsByQueue = new Map();
+      state.mediaByQueue = new Map();
+      state.serviceLevelsByQueue = new Map();
+      state.page = 1;
+      state.lastRefresh = null;
+      if (state.refreshTimer) clearInterval(state.refreshTimer);
+      state.refreshTimer = null;
+      setOverlay(false);
+      setConnectionPill('Not connected');
+      render();
+      setBanner('Logged out.');
+    }
+
+    function wireEvents() {
+      el('connectBtn').addEventListener('click', async () => {
+        try { await connectGenesys(); } catch (err) { setOverlay(false); showError(err); }
+      });
+      el('refreshBtn').addEventListener('click', async () => {
+        try {
+          if (!state.token?.access_token) return;
+          await loadDashboard();
+        } catch (err) {
+          showError(err);
+        }
+      });
+      el('logoutBtn').addEventListener('click', logout);
+      el('clientId').addEventListener('input', () => saveClientId());
+    }
+
+    window.addEventListener('message', (event) => {
+      if (event.origin !== window.location.origin) return;
+      if (!event.data) return;
+      if (event.data.type === 'genesys-pkce-token') {
+        state.token = event.data.token;
+        localStorage.setItem(TOKEN_KEY, JSON.stringify(event.data.token));
+        setOverlay(false);
+        setConnectionPill('Authenticated', 'good');
+        loadDashboard().catch(showError);
+      }
+    });
+
+    async function init() {
+      applyConfigToForm();
+      restoreSession();
+      wireEvents();
+      if (await handleCallbackIfPresent()) return;
+      if (state.token?.access_token) {
+        setConnectionPill('Connected', 'good');
+        try {
+          await loadDashboard();
+          return;
+        } catch (err) {
+          showError(err);
+        }
+      }
+      render();
+    }
+
+    init().catch(showError);
+  </script>
+</body>
+</html>
