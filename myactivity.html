@@ -725,8 +725,14 @@
 
     async function queryQueueObservations(queueIds) {
       if (!queueIds.length) return { statuses: new Map(), media: new Map(), serviceLevels: new Map() };
+      // Queue summary metrics are taken directly from the queue observation
+      // metrics used by Genesys: oOnQueueUsers and oOffQueueUsers are each
+      // summed independently. oUserRoutingStatuses is intentionally not
+      // requested here because it describes the same routing-state population
+      // and using it alongside oOnQueueUsers would double-count routing states.
+      // oUserPresences is used only for the visual presence breakdown.
       const statusBody = {
-        metrics: ['oUserRoutingStatuses', 'oOnQueueUsers', 'oOffQueueUsers', 'oMemberUsers', 'oActiveUsers'],
+        metrics: ['oOnQueueUsers', 'oOffQueueUsers', 'oUserPresences', 'oMemberUsers', 'oActiveUsers'],
         filter: { type: 'and', clauses: [queueClause(queueIds)] },
       };
       const mediaBody = {
@@ -756,41 +762,78 @@
       ]);
 
       const statuses = new Map();
+      const mappings = statusResp.systemToOrganizationMappings || {};
+      const presenceSystemById = new Map();
+      for (const [systemName, ids] of Object.entries(mappings)) {
+        for (const id of (Array.isArray(ids) ? ids : [])) {
+          presenceSystemById.set(String(id).toUpperCase(), String(systemName).toUpperCase());
+        }
+      }
+
       for (const r of statusResp.results || []) {
         const queueId = r.group?.queueId;
         if (!queueId) continue;
         const bucket = statuses.get(queueId) || {
-          metrics: { onQueue: 0, offQueue: 0, interacting: 0, communicating: 0, idle: 0, notResponding: 0 },
+          metrics: {
+            onQueue: 0,
+            offQueue: 0,
+            interacting: 0,
+            communicating: 0,
+            idle: 0,
+            notResponding: 0,
+            memberUsers: 0,
+            activeUsers: 0,
+          },
           presence: { available: 0, busy: 0, notResponding: 0 },
+          presenceBySystem: {},
         };
+
         for (const item of r.data || []) {
           const metric = item.metric;
           const qualifier = String(item.qualifier || '').toUpperCase();
           const count = Number(item.stats?.count ?? item.count ?? 0);
-          if (metric === 'oMemberUsers') bucket.metrics.memberUsers = count;
-          if (metric === 'oActiveUsers') bucket.metrics.activeUsers = count;
-          if (metric === 'oOffQueueUsers') bucket.metrics.offQueue = count;
+          if (!Number.isFinite(count)) continue;
+
+          if (metric === 'oMemberUsers') {
+            bucket.metrics.memberUsers = count;
+            continue;
+          }
+          if (metric === 'oActiveUsers') {
+            bucket.metrics.activeUsers = count;
+            continue;
+          }
+
+          // The native queue summary's On Queue and Off Queue values come from
+          // the observation metrics themselves. Each result is a status bucket,
+          // so the totals must be summed across all qualifiers.
           if (metric === 'oOnQueueUsers') {
             bucket.metrics.onQueue += count;
-            if (qualifier === 'COMMUNICATING' || qualifier === 'BUSY') bucket.metrics.communicating += count;
+            if (qualifier === 'COMMUNICATING') bucket.metrics.communicating += count;
             else if (qualifier === 'INTERACTING') bucket.metrics.interacting += count;
             else if (qualifier === 'IDLE') bucket.metrics.idle += count;
             else if (qualifier === 'NOT_RESPONDING') bucket.metrics.notResponding += count;
-            else if (qualifier === 'AVAILABLE' || qualifier === 'ON_QUEUE') bucket.presence.available += count;
+            continue;
           }
-          if (metric === 'oUserRoutingStatuses') {
-            if (qualifier === 'COMMUNICATING' || qualifier === 'BUSY') bucket.metrics.communicating += count;
-            else if (qualifier === 'INTERACTING') bucket.metrics.interacting += count;
-            else if (qualifier === 'IDLE') bucket.metrics.idle += count;
-            else if (qualifier === 'NOT_RESPONDING') bucket.metrics.notResponding += count;
-          }
+
           if (metric === 'oOffQueueUsers') {
             bucket.metrics.offQueue += count;
-            if (qualifier === 'AVAILABLE' || qualifier === 'IDLE' || qualifier === 'ON_QUEUE') bucket.presence.available += count;
-            else if (qualifier === 'COMMUNICATING' || qualifier === 'BUSY') bucket.presence.busy += count;
-            else if (qualifier === 'NOT_RESPONDING') bucket.presence.notResponding += count;
+            continue;
+          }
+
+          // Presence qualifiers are organisation-specific presence UUIDs.
+          // systemToOrganizationMappings lets us resolve them to system names.
+          if (metric === 'oUserPresences') {
+            const systemPresence = presenceSystemById.get(qualifier) || qualifier;
+            bucket.presenceBySystem[systemPresence] = (bucket.presenceBySystem[systemPresence] || 0) + count;
+            if (systemPresence === 'AVAILABLE') bucket.presence.available += count;
+            else if (systemPresence === 'BUSY') bucket.presence.busy += count;
           }
         }
+
+        // NOT_RESPONDING is a routing status, not a presence definition. Keep
+        // it in the presence visual because that is how the dashboard presents
+        // the operational breakdown, but source it only from oOnQueueUsers.
+        bucket.presence.notResponding = bucket.metrics.notResponding;
         statuses.set(queueId, bucket);
       }
 
@@ -956,11 +999,11 @@
       const activeCount = agents.filter((m) => m.joined === true || m?.user?.joined === true).length;
       const rows = agents.length
         ? agents.map(agentRowMarkup).join('')
-        : `<div class="agent-empty">No currently joined agents were returned for this queue.</div>`;
+        : `<div class="agent-empty">No queue members were returned for this queue.</div>`;
       return `
         <div class="agent-panel">
           <div class="agent-panel-header">
-            <div class="agent-panel-title">Current agents in ${escapeHtml(queue.name)}</div>
+            <div class="agent-panel-title">Queue members in ${escapeHtml(queue.name)}</div>
             <div class="agent-panel-meta">${agents.length} returned${agents.length ? ` • ${activeCount} joined` : ''}</div>
           </div>
           <div class="agent-list">${rows}</div>
@@ -976,7 +1019,6 @@
           pageNumber: String(pageNumber),
           sortOrder: 'asc',
           expand: 'presence,routingStatus',
-          joined: 'true',
         });
         const res = await apiFetch(`/api/v2/routing/queues/${encodeURIComponent(queueId)}/members?${params.toString()}`);
         const entities = Array.isArray(res?.entities) ? res.entities : [];
@@ -1050,8 +1092,10 @@
           const interactions = sumMedia(media, 'interactions');
           const pv = presenceVisual(status.presence || {});
           const serviceVis = serviceLevelVisual(service);
-          const onQueue = Number(status.metrics.onQueue ?? status.metrics.activeUsers ?? 0);
-          const offQueue = Number(status.metrics.offQueue ?? status.metrics.offQueueUsers ?? status.presence?.offQueue ?? 0);
+          // These two figures are the authoritative queue-observation totals.
+          // Do not derive them from the expanded member roster.
+          const onQueue = Number(status.metrics.onQueue || 0);
+          const offQueue = Number(status.metrics.offQueue || 0);
           const interacting = Number(status.metrics.interacting ?? 0);
           const communicating = Number(status.metrics.communicating ?? 0);
           const idle = Number(status.metrics.idle ?? 0);
