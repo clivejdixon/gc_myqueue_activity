@@ -244,6 +244,96 @@
     .seg.available { background: linear-gradient(90deg, #6bbf59, #43a047); }
     .seg.busy { background: linear-gradient(90deg, #f8c34d, #f59e0b); }
     .seg.notresp { background: linear-gradient(90deg, #f56565, #dc2626); }
+    .expand-row td {
+      padding: 0 !important;
+      background: #f8fafc !important;
+    }
+    .agent-panel {
+      padding: 14px 18px 18px 56px;
+      border-top: 1px solid #edf1f7;
+      background: linear-gradient(180deg, #fbfcff, #f8fafc);
+    }
+    .agent-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .agent-panel-title { font-weight: 700; color: #25314a; }
+    .agent-panel-meta { font-size: 12px; color: var(--muted); }
+    .agent-list { display: grid; gap: 7px; }
+    .agent-row {
+      display: grid;
+      grid-template-columns: 34px minmax(220px, 1.3fr) minmax(170px, 1fr) minmax(160px, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 12px;
+      border: 1px solid #e7edf5;
+      border-radius: 12px;
+      background: #fff;
+    }
+    .agent-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: #eaf2ff;
+      color: #2563eb;
+      font-weight: 800;
+      font-size: 12px;
+      overflow: hidden;
+    }
+    .agent-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .agent-name { font-weight: 700; color: #1f2937; }
+    .agent-email { font-size: 12px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .agent-status { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+    .status-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+    .status-available { background: #62b246; }
+    .status-busy { background: #f59e0b; }
+    .status-red { background: #dc2626; }
+    .status-gray { background: #94a3b8; }
+    .routing-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 700;
+      width: fit-content;
+    }
+    .joined-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: #ecfdf3;
+      color: #166534;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .agent-loading, .agent-empty, .agent-error {
+      padding: 12px 14px;
+      border: 1px dashed #dbe4f0;
+      border-radius: 12px;
+      color: var(--muted);
+      background: #fff;
+    }
+    .agent-error { color: #991b1b; background: #fef2f2; border-color: #fecaca; }
+    .queue-clickable { cursor: pointer; }
+    .queue-clickable:hover { color: #1d4ed8; }
+    .presence-clickable { cursor: pointer; }
+    .presence-clickable:hover .presence-labels, .presence-clickable:hover .presence-bar { opacity: .88; }
+    .row-expanded td { background: #fbfdff; }
+    .row-expanded .queue-chevron { transform: rotate(90deg); color: #2563eb; }
+    @media (max-width: 900px) {
+      .agent-row { grid-template-columns: 34px 1fr; }
+      .agent-row > :nth-child(3), .agent-row > :nth-child(4), .agent-row > :nth-child(5) { grid-column: 2; }
+    }
     .tiny { font-size: 12px; color: var(--muted); }
     .health { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; }
     .health .pill-dot { width: 10px; height: 10px; border-radius: 50%; background: #999; }
@@ -411,6 +501,10 @@
       observationsByQueue: new Map(),
       mediaByQueue: new Map(),
       serviceLevelsByQueue: new Map(),
+      agentsByQueue: new Map(),
+      expandedQueues: new Set(),
+      agentLoading: new Set(),
+      agentErrors: new Map(),
       page: 1,
       refreshTimer: null,
       loading: false,
@@ -783,6 +877,140 @@
         .replaceAll("'", '&#39;');
     }
 
+    function normaliseStatusLabel(value) {
+      const raw = String(value || '').trim();
+      if (!raw) return 'Unknown';
+      return raw
+        .toLowerCase()
+        .split(/[_\s-]+/)
+        .map((part) => part ? part.charAt(0).toUpperCase() + part.slice(1) : '')
+        .join(' ');
+    }
+
+    function presenceStatusMeta(member) {
+      const systemPresence = member?.user?.presence?.presenceDefinition?.systemPresence
+        || member?.user?.presence?.systemPresence
+        || member?.presence?.presenceDefinition?.systemPresence
+        || member?.presence?.systemPresence
+        || 'Unknown';
+      const key = String(systemPresence).toUpperCase();
+      if (['AVAILABLE', 'ON_QUEUE'].includes(key)) return { label: normaliseStatusLabel(systemPresence), cls: 'status-available' };
+      if (['BUSY', 'AWAY', 'MEAL', 'BREAK', 'TRAINING', 'MEETING'].includes(key)) return { label: normaliseStatusLabel(systemPresence), cls: 'status-busy' };
+      if (['DO_NOT_DISTURB', 'OFFLINE', 'NOT_RESPONDING'].includes(key)) return { label: normaliseStatusLabel(systemPresence), cls: 'status-red' };
+      return { label: normaliseStatusLabel(systemPresence), cls: 'status-gray' };
+    }
+
+    function routingStatusValue(member) {
+      return member?.routingStatus?.status
+        || member?.routingStatus?.routingStatus
+        || member?.user?.routingStatus?.status
+        || member?.user?.routingStatus?.routingStatus
+        || 'Unknown';
+    }
+
+    function memberName(member) {
+      return member?.user?.name || member?.name || member?.user?.username || member?.user?.email || member?.id || 'Unknown agent';
+    }
+
+    function memberEmail(member) {
+      return member?.user?.email || member?.email || '';
+    }
+
+    function avatarMarkup(member) {
+      const src = member?.user?.images?.[0]?.imageUri || member?.user?.images?.[0]?.imageUrl || member?.images?.[0]?.imageUri || member?.images?.[0]?.imageUrl;
+      if (src) return `<div class="agent-avatar"><img src="${escapeHtml(src)}" alt="" loading="lazy" /></div>`;
+      const initials = memberName(member).split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x.charAt(0).toUpperCase()).join('') || '?';
+      return `<div class="agent-avatar">${escapeHtml(initials)}</div>`;
+    }
+
+    function agentRowMarkup(member) {
+      const presence = presenceStatusMeta(member);
+      const routing = routingStatusValue(member);
+      const joined = member?.joined === true || member?.user?.joined === true;
+      const email = memberEmail(member);
+      return `
+        <div class="agent-row">
+          ${avatarMarkup(member)}
+          <div>
+            <div class="agent-name">${escapeHtml(memberName(member))}</div>
+            ${email ? `<div class="agent-email">${escapeHtml(email)}</div>` : ''}
+          </div>
+          <div class="agent-status"><span class="status-dot ${presence.cls}"></span>${escapeHtml(presence.label)}</div>
+          <div><span class="routing-badge">${escapeHtml(normaliseStatusLabel(routing))}</span></div>
+          <div>${joined ? '<span class="joined-badge">Joined</span>' : ''}</div>
+        </div>`;
+    }
+
+    function agentPanelMarkup(queue) {
+      if (state.agentLoading.has(queue.id)) {
+        return `<div class="agent-panel"><div class="agent-loading">Loading agent status...</div></div>`;
+      }
+      const err = state.agentErrors.get(queue.id);
+      if (err) {
+        return `<div class="agent-panel"><div class="agent-error">${escapeHtml(err)}</div></div>`;
+      }
+      if (!state.agentsByQueue.has(queue.id)) {
+        return `<div class="agent-panel"><div class="agent-loading">Select the queue name or presence breakdown to load the current agents.</div></div>`;
+      }
+      const agents = state.agentsByQueue.get(queue.id) || [];
+      const activeCount = agents.filter((m) => m.joined === true || m?.user?.joined === true).length;
+      const rows = agents.length
+        ? agents.map(agentRowMarkup).join('')
+        : `<div class="agent-empty">No currently joined agents were returned for this queue.</div>`;
+      return `
+        <div class="agent-panel">
+          <div class="agent-panel-header">
+            <div class="agent-panel-title">Current agents in ${escapeHtml(queue.name)}</div>
+            <div class="agent-panel-meta">${agents.length} returned${agents.length ? ` • ${activeCount} joined` : ''}</div>
+          </div>
+          <div class="agent-list">${rows}</div>
+        </div>`;
+    }
+
+    async function getQueueMembers(queueId) {
+      const all = [];
+      let pageNumber = 1;
+      while (true) {
+        const params = new URLSearchParams({
+          pageSize: '100',
+          pageNumber: String(pageNumber),
+          sortOrder: 'asc',
+          expand: 'presence,routingStatus',
+          joined: 'true',
+        });
+        const res = await apiFetch(`/api/v2/routing/queues/${encodeURIComponent(queueId)}/members?${params.toString()}`);
+        const entities = Array.isArray(res?.entities) ? res.entities : [];
+        all.push(...entities);
+        if (entities.length < 100) break;
+        pageNumber += 1;
+      }
+      return all.sort((a, b) => memberName(a).localeCompare(memberName(b)));
+    }
+
+    async function toggleQueueAgents(queueId) {
+      const queue = state.queues.find((q) => q.id === queueId);
+      if (!queue || state.agentLoading.has(queueId)) return;
+      if (state.expandedQueues.has(queueId)) {
+        state.expandedQueues.delete(queueId);
+        render();
+        return;
+      }
+      state.expandedQueues.add(queueId);
+      state.agentErrors.delete(queueId);
+      render();
+      state.agentLoading.add(queueId);
+      render();
+      try {
+        const members = await getQueueMembers(queueId);
+        state.agentsByQueue.set(queueId, members);
+      } catch (err) {
+        state.agentErrors.set(queueId, err?.message || String(err));
+      } finally {
+        state.agentLoading.delete(queueId);
+        render();
+      }
+    }
+
     function renderPager(totalPages) {
       const pager = el('pager');
       const pages = [];
@@ -828,9 +1056,10 @@
           const communicating = Number(status.metrics.communicating ?? 0);
           const idle = Number(status.metrics.idle ?? 0);
           const notResponding = Number(status.metrics.notResponding ?? 0);
+          const expanded = state.expandedQueues.has(q.id);
           return `
-            <tr>
-              <td><div class="queue-name"><span class="queue-chevron">›</span><span class="queue-name-text">${escapeHtml(q.name)}</span></div></td>
+            <tr class="${expanded ? 'row-expanded' : ''}">
+              <td class="queue-clickable" data-expand-queue="${escapeHtml(q.id)}"><div class="queue-name"><span class="queue-chevron">›</span><span class="queue-name-text">${escapeHtml(q.name)}</span></div></td>
               <td>
                 <div class="metric-main ${waiting > 0 ? (waiting >= 6 ? 'metric-red' : waiting >= 3 ? 'metric-amber' : 'metric-green') : 'metric-green'}">${waiting}</div>
                 <div class="mini-line">${mediaLine(media, 'waiting')}</div>
@@ -845,7 +1074,7 @@
               </td>
               <td class="center-cell"><strong>${onQueue}</strong></td>
               <td class="center-cell"><strong>${offQueue}</strong></td>
-              <td class="presence-cell">
+              <td class="presence-cell presence-clickable" data-expand-queue="${escapeHtml(q.id)}" title="Show current agents">
                 <div class="presence-summary">
                   <div class="presence-labels">${pv.labels}</div>
                   <div class="presence-bar">${pv.bar}</div>
@@ -855,9 +1084,17 @@
               <td class="center-cell"><strong>${communicating}</strong></td>
               <td class="center-cell"><strong>${idle}</strong></td>
               <td class="center-cell"><strong>${notResponding}</strong></td>
-              <td class="row-actions"><button class="action-btn" title="More actions" aria-label="More actions">⋮</button></td>
-            </tr>`;
+              <td class="row-actions"><button class="action-btn" title="Show agents" aria-label="Show agents" data-expand-queue="${escapeHtml(q.id)}">${expanded ? '⌃' : '⋮'}</button></td>
+            </tr>
+            ${expanded ? `<tr class="expand-row"><td colspan="12">${agentPanelMarkup(q)}</td></tr>` : ''}`;
         }).join('');
+
+        rows.querySelectorAll('[data-expand-queue]').forEach((node) => {
+          node.addEventListener('click', (event) => {
+            event.stopPropagation();
+            toggleQueueAgents(node.getAttribute('data-expand-queue'));
+          });
+        });
       }
       renderPager(totalPages);
       const updated = state.lastRefresh ? state.lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Not connected';
@@ -868,6 +1105,27 @@
       else if (state.lastRefresh) setConnectionPill(`Live ${updated}`, 'good');
       else if (state.token) setConnectionPill('Connected', 'good');
       else setConnectionPill('Not connected', 'neutral');
+    }
+
+    async function refreshExpandedAgents() {
+      const expanded = Array.from(state.expandedQueues);
+      if (!expanded.length) return;
+      expanded.forEach((queueId) => {
+        state.agentLoading.add(queueId);
+        state.agentErrors.delete(queueId);
+      });
+      render();
+      await Promise.all(expanded.map(async (queueId) => {
+        try {
+          const members = await getQueueMembers(queueId);
+          state.agentsByQueue.set(queueId, members);
+        } catch (err) {
+          state.agentErrors.set(queueId, err?.message || String(err));
+        } finally {
+          state.agentLoading.delete(queueId);
+        }
+      }));
+      render();
     }
 
     async function loadDashboard() {
@@ -886,9 +1144,12 @@
         state.observationsByQueue = statuses;
         state.mediaByQueue = media;
         state.serviceLevelsByQueue = serviceLevels;
+        state.agentsByQueue.clear();
+        state.agentErrors.clear();
         state.lastRefresh = new Date();
         state.page = 1;
         render();
+        await refreshExpandedAgents();
         startAutoRefresh();
       } finally {
         state.loading = false;
@@ -967,6 +1228,10 @@
       state.observationsByQueue = new Map();
       state.mediaByQueue = new Map();
       state.serviceLevelsByQueue = new Map();
+      state.agentsByQueue = new Map();
+      state.expandedQueues = new Set();
+      state.agentLoading = new Set();
+      state.agentErrors = new Map();
       state.page = 1;
       state.lastRefresh = null;
       if (state.refreshTimer) clearInterval(state.refreshTimer);
