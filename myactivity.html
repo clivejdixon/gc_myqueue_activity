@@ -532,7 +532,27 @@
       };
     }
 
-    async function apiFetch(path, options = {}) {
+    async function refreshAccessToken() {
+      const cfg = loadConfig();
+      const refreshToken = state.token?.refresh_token;
+      if (!cfg.clientId || !refreshToken) throw new Error('Session expired. Please reconnect to Genesys Cloud.');
+      const body = new URLSearchParams();
+      body.set('grant_type', 'refresh_token');
+      body.set('client_id', cfg.clientId);
+      body.set('refresh_token', refreshToken);
+      const res = await fetch(`https://${LOGIN_HOST}/oauth/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || data?.error_description || data?.error || `Token refresh failed (${res.status})`);
+      state.token = { ...state.token, ...data };
+      localStorage.setItem(TOKEN_KEY, JSON.stringify(state.token));
+      return state.token;
+    }
+
+    async function apiFetch(path, options = {}, allowRefresh = true) {
       const res = await fetch(`https://${API_HOST}${path}`, {
         ...options,
         headers: {
@@ -543,6 +563,12 @@
       const text = await res.text();
       let data = null;
       try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+
+      if (res.status === 401 && allowRefresh && state.token?.refresh_token) {
+        await refreshAccessToken();
+        return apiFetch(path, options, false);
+      }
+
       if (!res.ok) {
         const msg = data?.message || data?.error || data?.error_description || (typeof data === 'string' ? data : '') || `Request failed (${res.status})`;
         throw new Error(msg);
@@ -558,12 +584,19 @@
         const res = await apiFetch(`${path}${sep}pageSize=100&pageNumber=${pageNumber}`);
         const entities = res.entities || res.users || res.results || [];
         all.push(...entities);
+
+        // Genesys listing endpoints are not completely consistent in their
+        // pagination metadata, so support nextUri, pageCount and total.
         if (res.nextUri) {
           pageNumber += 1;
           continue;
         }
         if (typeof res.pageCount === 'number' && typeof res.pageNumber === 'number' && res.pageNumber < res.pageCount) {
           pageNumber = res.pageNumber + 1;
+          continue;
+        }
+        if (typeof res.total === 'number' && all.length < res.total && entities.length) {
+          pageNumber += 1;
           continue;
         }
         break;
@@ -576,15 +609,17 @@
     }
 
     async function getMemberQueuesForUser(userId) {
-      const queues = await getAllPages('/api/v2/routing/queues');
-      const selected = [];
-      for (const queue of queues) {
-        if (!queue?.id || !queue?.name) continue;
-        const members = await getAllPages(`/api/v2/routing/queues/${queue.id}/users`);
-        const memberIds = members.map((m) => m.id || m.userId).filter(Boolean);
-        if (memberIds.includes(userId)) selected.push({ id: queue.id, name: queue.name });
-      }
-      return selected.sort((a, b) => a.name.localeCompare(b.name));
+      // Use the user-centric queue membership endpoint. This is both more
+      // efficient and more reliable than enumerating every queue and then
+      // querying members for each queue. The response represents the user's
+      // queue memberships; do not filter on joined because the dashboard is
+      // intended to show every queue the user is a member of, including
+      // queues that are currently inactive/unjoined.
+      const queues = await getAllPages(`/api/v2/users/${encodeURIComponent(userId)}/queues`);
+      return queues
+        .filter((q) => q?.id && q?.name)
+        .map((q) => ({ id: q.id, name: q.name, joined: q.joined !== false }))
+        .sort((a, b) => a.name.localeCompare(b.name));
     }
 
     function queueClause(queueIds) {
@@ -684,10 +719,11 @@
         const queueId = r.group?.queueId;
         if (!queueId) continue;
         const bucket = serviceLevels.get(queueId) || { ratio: null, target: null, numerator: null, denominator: null };
-        for (const interval of r.data || []) {
-          for (const item of interval.metrics || []) {
-            if (item.metric !== 'oServiceLevel') continue;
-            const stats = item.stats || {};
+        for (const entry of r.data || []) {
+          const metrics = Array.isArray(entry?.metrics) ? entry.metrics : (entry?.metric ? [entry] : []);
+          for (const metric of metrics) {
+            if (metric.metric !== 'oServiceLevel') continue;
+            const stats = metric.stats || {};
             bucket.ratio = stats.ratio ?? bucket.ratio;
             bucket.target = stats.target ?? bucket.target;
             bucket.numerator = stats.numerator ?? bucket.numerator;
@@ -842,6 +878,9 @@
         state.me = await getMe();
         const queues = await getMemberQueuesForUser(state.me.id);
         state.queues = queues;
+        if (!queues.length) {
+          throw new Error(`No queue memberships were returned for ${state.me.name || state.me.email || state.me.id}. Verify the user has routing queue membership and that the OAuth client has routing:queue:view or routing:queue:join.`);
+        }
         const ids = queues.map((q) => q.id);
         const { statuses, media, serviceLevels } = await queryQueueObservations(ids);
         state.observationsByQueue = statuses;
