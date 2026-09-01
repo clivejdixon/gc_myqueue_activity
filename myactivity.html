@@ -263,15 +263,36 @@
     .agent-panel-title { font-weight: 700; color: #25314a; }
     .agent-panel-meta { font-size: 12px; color: var(--muted); }
     .agent-list { display: grid; gap: 7px; }
-    .agent-row {
-      display: grid;
-      grid-template-columns: 34px minmax(220px, 1.3fr) minmax(170px, 1fr) minmax(160px, 1fr) auto;
-      align-items: center;
-      gap: 12px;
-      padding: 9px 12px;
+    .agent-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      overflow: hidden;
       border: 1px solid #e7edf5;
       border-radius: 12px;
       background: #fff;
+    }
+    .agent-table th, .agent-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #edf1f7;
+      text-align: left;
+      vertical-align: middle;
+    }
+    .agent-table th {
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      white-space: nowrap;
+    }
+    .agent-table tr:last-child td { border-bottom: 0; }
+    .agent-cell-name {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
     }
     .agent-avatar {
       width: 30px;
@@ -287,8 +308,11 @@
     }
     .agent-avatar img { width: 100%; height: 100%; object-fit: cover; }
     .agent-name { font-weight: 700; color: #1f2937; }
-    .agent-email { font-size: 12px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .agent-status { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+    .agent-status-cell { white-space: nowrap; }
+    .agent-status { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; }
+    .agent-status-sub { margin-top: 3px; font-size: 11px; color: var(--muted); }
+    .status-time { white-space: nowrap; font-weight: 600; color: #334155; }
+    .status-duration { white-space: nowrap; font-weight: 800; color: #334155; font-variant-numeric: tabular-nums; }
     .status-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
     .status-available { background: #62b246; }
     .status-busy { background: #f59e0b; }
@@ -306,16 +330,6 @@
       font-weight: 700;
       width: fit-content;
     }
-    .joined-badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 5px 9px;
-      border-radius: 999px;
-      background: #ecfdf3;
-      color: #166534;
-      font-size: 12px;
-      font-weight: 700;
-    }
     .agent-loading, .agent-empty, .agent-error {
       padding: 12px 14px;
       border: 1px dashed #dbe4f0;
@@ -331,8 +345,8 @@
     .row-expanded td { background: #fbfdff; }
     .row-expanded .queue-chevron { transform: rotate(90deg); color: #2563eb; }
     @media (max-width: 900px) {
-      .agent-row { grid-template-columns: 34px 1fr; }
-      .agent-row > :nth-child(3), .agent-row > :nth-child(4), .agent-row > :nth-child(5) { grid-column: 2; }
+      .agent-table th, .agent-table td { padding: 9px 10px; }
+      .agent-table th:nth-child(4), .agent-table td:nth-child(4) { white-space: nowrap; }
     }
     .tiny { font-size: 12px; color: var(--muted); }
     .health { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; }
@@ -948,15 +962,83 @@
         || member?.routingStatus?.routingStatus
         || member?.user?.routingStatus?.status
         || member?.user?.routingStatus?.routingStatus
-        || 'Unknown';
+        || 'OFF_QUEUE';
+    }
+
+    function presenceDefinition(member) {
+      return member?.user?.presence?.presenceDefinition
+        || member?.presence?.presenceDefinition
+        || null;
+    }
+
+    function systemPresenceValue(member) {
+      const def = presenceDefinition(member);
+      return def?.systemPresence
+        || member?.user?.presence?.systemPresence
+        || member?.presence?.systemPresence
+        || 'UNKNOWN';
+    }
+
+    function memberDisplayName(member) {
+      const first = member?.user?.firstName || member?.firstName || '';
+      const last = member?.user?.lastName || member?.lastName || '';
+      const combined = `${first} ${last}`.trim();
+      if (combined) return combined;
+      return member?.user?.name || member?.name || member?.user?.username || member?.id || 'Unknown agent';
     }
 
     function memberName(member) {
-      return member?.user?.name || member?.name || member?.user?.username || member?.user?.email || member?.id || 'Unknown agent';
+      return memberDisplayName(member);
     }
 
-    function memberEmail(member) {
-      return member?.user?.email || member?.email || '';
+    function isOfflineMember(member) {
+      return String(systemPresenceValue(member)).toUpperCase() === 'OFFLINE';
+    }
+
+    function combinedAgentStatus(member) {
+      const presence = String(systemPresenceValue(member)).toUpperCase();
+      const routing = String(routingStatusValue(member)).toUpperCase();
+      if (routing === 'INTERACTING') return { label: 'In Conversation', cls: 'status-busy', routing };
+      if (routing === 'COMMUNICATING') return { label: 'Communicating', cls: 'status-busy', routing };
+      if (routing === 'NOT_RESPONDING') return { label: 'Not Responding', cls: 'status-red', routing };
+      if (routing === 'IDLE') return { label: 'Available', cls: 'status-available', routing };
+      if (routing !== 'OFF_QUEUE') return { label: normaliseStatusLabel(routing), cls: 'status-busy', routing };
+
+      if (presence === 'AVAILABLE' || presence === 'ON_QUEUE') return { label: 'Available', cls: 'status-available', routing };
+      if (['BUSY', 'AWAY', 'MEAL', 'BREAK', 'TRAINING', 'MEETING'].includes(presence)) return { label: normaliseStatusLabel(presence), cls: 'status-busy', routing };
+      if (['DO_NOT_DISTURB', 'NOT_RESPONDING'].includes(presence)) return { label: normaliseStatusLabel(presence), cls: 'status-red', routing };
+      return { label: normaliseStatusLabel(presence), cls: 'status-gray', routing };
+    }
+
+    function statusStartTime(member, combined) {
+      if (combined.routing && combined.routing !== 'OFF_QUEUE') {
+        const routingStart = member?.routingStatus?.startTime || member?.user?.routingStatus?.startTime;
+        if (routingStart) return routingStart;
+      }
+      return member?.user?.presence?.modifiedDate
+        || member?.presence?.modifiedDate
+        || null;
+    }
+
+    function formatStatusTime(value) {
+      if (!value) return '—';
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return '—';
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function formatDurationSince(value) {
+      if (!value) return '—';
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return '—';
+      const seconds = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000));
+      const days = Math.floor(seconds / 86400);
+      const hours = Math.floor((seconds % 86400) / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+      if (days) return `${days}d ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      if (hours) return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      return `${minutes}:${String(secs).padStart(2, '0')}`;
     }
 
     function avatarMarkup(member) {
@@ -967,26 +1049,27 @@
     }
 
     function agentRowMarkup(member) {
-      const presence = presenceStatusMeta(member);
-      const routing = routingStatusValue(member);
-      const joined = member?.joined === true || member?.user?.joined === true;
-      const email = memberEmail(member);
+      const combined = combinedAgentStatus(member);
+      const since = statusStartTime(member, combined);
       return `
-        <div class="agent-row">
-          ${avatarMarkup(member)}
-          <div>
-            <div class="agent-name">${escapeHtml(memberName(member))}</div>
-            ${email ? `<div class="agent-email">${escapeHtml(email)}</div>` : ''}
-          </div>
-          <div class="agent-status"><span class="status-dot ${presence.cls}"></span>${escapeHtml(presence.label)}</div>
-          <div><span class="routing-badge">${escapeHtml(normaliseStatusLabel(routing))}</span></div>
-          <div>${joined ? '<span class="joined-badge">Joined</span>' : ''}</div>
-        </div>`;
+        <tr>
+          <td>
+            <div class="agent-cell-name">
+              ${avatarMarkup(member)}
+              <div class="agent-name">${escapeHtml(memberDisplayName(member))}</div>
+            </div>
+          </td>
+          <td class="agent-status-cell">
+            <div class="agent-status"><span class="status-dot ${combined.cls}"></span>${escapeHtml(combined.label)}</div>
+          </td>
+          <td class="status-time">${escapeHtml(formatStatusTime(since))}</td>
+          <td class="status-duration" data-status-since="${since ? escapeHtml(since) : ''}">${escapeHtml(formatDurationSince(since))}</td>
+        </tr>`;
     }
 
     function agentPanelMarkup(queue) {
       if (state.agentLoading.has(queue.id)) {
-        return `<div class="agent-panel"><div class="agent-loading">Loading agent status...</div></div>`;
+        return `<div class="agent-panel"><div class="agent-loading">Loading current agents...</div></div>`;
       }
       const err = state.agentErrors.get(queue.id);
       if (err) {
@@ -995,18 +1078,21 @@
       if (!state.agentsByQueue.has(queue.id)) {
         return `<div class="agent-panel"><div class="agent-loading">Select the queue name or presence breakdown to load the current agents.</div></div>`;
       }
-      const agents = state.agentsByQueue.get(queue.id) || [];
-      const activeCount = agents.filter((m) => m.joined === true || m?.user?.joined === true).length;
+      const members = state.agentsByQueue.get(queue.id) || [];
+      const agents = members.filter((member) => !isOfflineMember(member));
       const rows = agents.length
         ? agents.map(agentRowMarkup).join('')
-        : `<div class="agent-empty">No queue members were returned for this queue.</div>`;
+        : `<tr><td colspan="4"><div class="agent-empty">No logged-in agents are currently in this queue.</div></td></tr>`;
       return `
         <div class="agent-panel">
           <div class="agent-panel-header">
-            <div class="agent-panel-title">Queue members in ${escapeHtml(queue.name)}</div>
-            <div class="agent-panel-meta">${agents.length} returned${agents.length ? ` • ${activeCount} joined` : ''}</div>
+            <div class="agent-panel-title">Current agents in ${escapeHtml(queue.name)}</div>
+            <div class="agent-panel-meta">${agents.length} logged in${members.length > agents.length ? ` • ${members.length - agents.length} offline hidden` : ''}</div>
           </div>
-          <div class="agent-list">${rows}</div>
+          <table class="agent-table">
+            <thead><tr><th>Agent</th><th>Status</th><th>Status Since</th><th>Duration</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
         </div>`;
     }
 
@@ -1026,7 +1112,7 @@
         if (entities.length < 100) break;
         pageNumber += 1;
       }
-      return all.sort((a, b) => memberName(a).localeCompare(memberName(b)));
+      return all.sort((a, b) => memberDisplayName(a).localeCompare(memberDisplayName(b)));
     }
 
     async function toggleQueueAgents(queueId) {
@@ -1149,6 +1235,15 @@
       else if (state.lastRefresh) setConnectionPill(`Live ${updated}`, 'good');
       else if (state.token) setConnectionPill('Connected', 'good');
       else setConnectionPill('Not connected', 'neutral');
+    }
+
+    function startDurationTicker() {
+      setInterval(() => {
+        document.querySelectorAll('.status-duration[data-status-since]').forEach((node) => {
+          const since = node.getAttribute('data-status-since');
+          if (since) node.textContent = formatDurationSince(since);
+        });
+      }, 1000);
     }
 
     async function refreshExpandedAgents() {
@@ -1306,6 +1401,7 @@
       applyConfigToForm();
       restoreSession();
       wireEvents();
+      startDurationTicker();
       if (await handleCallbackIfPresent()) return;
       if (state.token?.access_token) {
         setConnectionPill('Connected', 'good');
