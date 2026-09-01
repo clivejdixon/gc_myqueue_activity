@@ -28,7 +28,8 @@
       color: var(--text);
     }
     .app {
-      width: 1600px;
+      width: 100%;
+      max-width: 1600px;
       min-height: var(--page-height, 100vh);
       padding: 10px;
       margin: 0 auto;
@@ -36,7 +37,8 @@
       justify-content: center;
     }
     .shell {
-      width: 1580px;
+      width: 100%;
+      max-width: 1580px;
       display: grid;
       gap: 10px;
       min-height: calc(var(--page-height, 100vh) - 20px);
@@ -256,7 +258,6 @@
     .table-wrap {
       height: 100%;
       overflow: auto;
-      container-type: inline-size;
       --table-gap: clamp(1px, 0.35vw, 10px);
     }
     table.queue-table {
@@ -466,86 +467,79 @@
     }
     .modal h2 { margin: 0 0 8px; }
     .modal p { color: var(--muted); margin: 0 0 16px; line-height: 1.5; }
-    /* Responsive queue table tiers. The table remains inline and uses the same row data,
-       but progressively hides lower-priority columns as the iframe/container narrows. */
-    /* ~50% width tier: retain the core queue metrics and Presence Breakdown. */
-    @container (max-width: 900px) {
-      .queue-table th, .queue-table td {
-        padding-left: clamp(2px, 0.42cqw, 6px);
-        padding-right: clamp(2px, 0.42cqw, 6px);
-      }
-      .queue-table th:nth-child(6), .queue-table td:nth-child(6),
-      .queue-table th:nth-child(8), .queue-table td:nth-child(8),
-      .queue-table th:nth-child(9), .queue-table td:nth-child(9),
-      .queue-table th:nth-child(10), .queue-table td:nth-child(10),
-      .queue-table th:nth-child(11), .queue-table td:nth-child(11),
-      .queue-table th:nth-child(12), .queue-table td:nth-child(12) { display: none; }
-
-      .queue-table th:nth-child(1) { width: 27%; }
-      .queue-table th:nth-child(2) { width: 13%; }
-      .queue-table th:nth-child(3) { width: 13%; }
-      .queue-table th:nth-child(4) { width: 13%; }
-      .queue-table th:nth-child(5) { width: 34%; }
-      .presence-bar { max-width: 100%; }
-      .presence-summary { max-width: 100%; }
+    /* Responsive behaviour is driven by the actual rendered app width.
+       ResizeObserver adds narrow-50 / narrow-25 classes so this works reliably inside an iframe,
+       including hosts that resize the iframe without changing the top-level browser viewport. */
+    .app.narrow-50 .queue-table th,
+    .app.narrow-50 .queue-table td {
+      padding-left: 5px;
+      padding-right: 5px;
     }
+    .app.narrow-50 .queue-table th:nth-child(6), .app.narrow-50 .queue-table td:nth-child(6),
+    .app.narrow-50 .queue-table th:nth-child(8), .app.narrow-50 .queue-table td:nth-child(8),
+    .app.narrow-50 .queue-table th:nth-child(9), .app.narrow-50 .queue-table td:nth-child(9),
+    .app.narrow-50 .queue-table th:nth-child(10), .app.narrow-50 .queue-table td:nth-child(10),
+    .app.narrow-50 .queue-table th:nth-child(11), .app.narrow-50 .queue-table td:nth-child(11),
+    .app.narrow-50 .queue-table th:nth-child(12), .app.narrow-50 .queue-table td:nth-child(12) { display: none; }
+    .app.narrow-50 .queue-table th:nth-child(1) { width: 27%; }
+    .app.narrow-50 .queue-table th:nth-child(2) { width: 13%; }
+    .app.narrow-50 .queue-table th:nth-child(3) { width: 13%; }
+    .app.narrow-50 .queue-table th:nth-child(4) { width: 13%; }
+    .app.narrow-50 .queue-table th:nth-child(5) { width: 34%; }
+    .app.narrow-50 .queue-table thead th,
+    .app.narrow-50 .queue-table tbody td { font-size: 11px; }
+    .app.narrow-50 .metric-main { font-size: 17px; }
+    .app.narrow-50 .service-main { font-size: 16px; }
+    .app.narrow-50 .mini-line { font-size: 10px; gap: 4px; }
+    .app.narrow-50 .media-ico { font-size: 11px; }
+    .app.narrow-50 .service-sub { font-size: 10px; }
+    .app.narrow-50 .presence-labels { font-size: 11px; gap: 3px; }
+    .app.narrow-50 .presence-item { grid-template-columns: 8px minmax(0,1fr) auto; gap: 5px; }
+    .app.narrow-50 .presence-dot { width: 8px; height: 8px; }
+    .app.narrow-50 .presence-bar { height: 9px; }
 
-    /* ~25% width tier: retain only the essential queue metrics. */
-    @container (max-width: 480px) {
-      .queue-table th:nth-child(7), .queue-table td:nth-child(7) { display: none; }
-      .queue-table th:nth-child(1) { width: 32%; }
-      .queue-table th:nth-child(2) { width: 16%; }
-      .queue-table th:nth-child(3) { width: 16%; }
-      .queue-table th:nth-child(4) { width: 16%; }
-      .queue-table th:nth-child(5) { width: 20%; }
+    .app.narrow-25 .queue-table th:nth-child(7),
+    .app.narrow-25 .queue-table td:nth-child(7) { display: none; }
+    .app.narrow-25 .queue-table th:nth-child(1) { width: 32%; }
+    .app.narrow-25 .queue-table th:nth-child(2) { width: 16%; }
+    .app.narrow-25 .queue-table th:nth-child(3) { width: 16%; }
+    .app.narrow-25 .queue-table th:nth-child(4) { width: 16%; }
+    .app.narrow-25 .queue-table th:nth-child(5) { width: 20%; }
+    .app.narrow-25 .queue-table th,
+    .app.narrow-25 .queue-table td { padding-left: 3px; padding-right: 3px; }
+    .app.narrow-25 .queue-table thead th,
+    .app.narrow-25 .queue-table tbody td { font-size: 10px; }
+    .app.narrow-25 .metric-main { font-size: 15px; }
+    .app.narrow-25 .service-main { font-size: 14px; }
+    .app.narrow-25 .mini-line { font-size: 8px; gap: 2px; }
+    .app.narrow-25 .media-ico { font-size: 9px; }
+    .app.narrow-25 .service-sub { font-size: 8px; margin-top: 2px; }
+    .app.narrow-25 .queue-chevron { font-size: 14px; }
+    .app.narrow-25 .queue-name { gap: 3px; }
+    .app.narrow-25 .presence-cell { display: none !important; }
 
-      .queue-table thead th { font-size: clamp(7px, 1.5cqw, 10px); }
-      .queue-table tbody td { font-size: clamp(7px, 1.45cqw, 10px); }
-      .metric-main { font-size: clamp(12px, 2.3cqw, 16px); }
-      .service-main { font-size: clamp(11px, 2.1cqw, 15px); }
-      .mini-line { font-size: clamp(6px, 1.25cqw, 9px); gap: 2px; }
-      .media-ico { font-size: clamp(8px, 1.45cqw, 10px); }
-      .service-sub { font-size: clamp(6px, 1.2cqw, 9px); }
-      .queue-chevron { font-size: clamp(12px, 2cqw, 16px); }
-    }
+    .app.narrow-25 .queue-table th,
+    .app.narrow-25 .queue-table td { padding-left: 1px; padding-right: 1px; }
+    .app.narrow-25 .queue-table thead th,
+    .app.narrow-25 .queue-table tbody td { font-size: 9px; }
+    .app.narrow-25 .metric-main { font-size: 14px; }
+    .app.narrow-25 .service-main { font-size: 13px; }
+    .app.narrow-25 .mini-line { font-size: 7px; }
 
-    @container (max-width: 430px) {
-      .queue-table th, .queue-table td {
-        padding-left: 1px;
-        padding-right: 1px;
-      }
-      .queue-table th:nth-child(1) { width: 30%; }
-      .queue-table th:nth-child(2) { width: 17%; }
-      .queue-table th:nth-child(3) { width: 17%; }
-      .queue-table th:nth-child(4) { width: 16%; }
-      .queue-table th:nth-child(5) { width: 20%; }
-      .queue-name { gap: 3px; }
-      .queue-name-text { max-width: 100%; }
-      .metric-main { font-size: clamp(11px, 2.6cqw, 14px); }
-    }
-
-
-    @container (max-width: 680px) {
-      .agent-details { padding: 7px 8px 9px; }
-      .agent-details-header { gap: 5px; margin-bottom: 5px; }
-      .agent-table th, .agent-table td { padding-left: 2px; padding-right: 2px; }
-      .agent-table th { font-size: clamp(6px, 1.1cqw, 8px); }
-      .agent-table td { font-size: clamp(7px, 1.35cqw, 9px); }
-      .agent-table th:nth-child(1) { width: 39%; }
-      .agent-table th:nth-child(2) { width: 27%; }
-      .agent-table th:nth-child(3) { width: 18%; }
-      .agent-table th:nth-child(4) { width: 16%; }
-      .agent-avatar { width: clamp(18px, 2.8cqw, 24px); height: clamp(18px, 2.8cqw, 24px); }
-    }
-
-    @media (max-width: 900px) {
-      .title { font-size: 20px; }
-      .client-input { width: 260px; }
-      .topbar { min-height: 50px; }
-    }
-    @media (max-width: 720px) {
-      .app { padding: 6px; }
-    }
+    /* Agent detail table contracts with the iframe but remains inline with the queue. */
+    .app.narrow-25 .agent-details { padding: 7px 8px 9px; }
+    .app.narrow-25 .agent-details-header { gap: 5px; margin-bottom: 5px; }
+    .app.narrow-25 .agent-table th,
+    .app.narrow-25 .agent-table td { padding-left: 3px; padding-right: 3px; font-size: 9px; }
+    .app.narrow-25 .agent-table th:nth-child(1) { width: 39%; }
+    .app.narrow-25 .agent-table th:nth-child(2) { width: 27%; }
+    .app.narrow-25 .agent-table th:nth-child(3) { width: 18%; }
+    .app.narrow-25 .agent-table th:nth-child(4) { width: 16%; }
+    .app.narrow-25 .agent-avatar { width: 19px; height: 19px; }
+    .app.narrow-25 .agent-name,
+    .app.narrow-25 .agent-status,
+    .app.narrow-25 .status-time,
+    .app.narrow-25 .status-duration { font-size: 9px; }
   </style>
 </head>
 <body>
@@ -1520,7 +1514,30 @@
     // Do not apply document/body zoom here: zoom changes the visual scale but prevents
     // the table container from crossing the intended 50% / 25% layout breakpoints.
 
+    function updateResponsiveMode(width) {
+      const app = document.querySelector('.app');
+      if (!app) return;
+      const w = Number.isFinite(width) ? width : app.getBoundingClientRect().width;
+      app.classList.toggle('narrow-50', w <= 900);
+      app.classList.toggle('narrow-25', w <= 480);
+    }
+
+    function startResponsiveObserver() {
+      const app = document.querySelector('.app');
+      if (!app) return;
+      updateResponsiveMode(app.getBoundingClientRect().width);
+      if ('ResizeObserver' in window) {
+        const observer = new ResizeObserver((entries) => {
+          for (const entry of entries) updateResponsiveMode(entry.contentRect.width);
+        });
+        observer.observe(app);
+      } else {
+        window.addEventListener('resize', () => updateResponsiveMode(app.getBoundingClientRect().width));
+      }
+    }
+
     async function init() {
+      startResponsiveObserver();
       applyConfigToForm();
       restoreSession();
       wireEvents();
