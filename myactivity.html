@@ -540,6 +540,40 @@
     .app.narrow-25 .agent-status,
     .app.narrow-25 .status-time,
     .app.narrow-25 .status-duration { font-size: 9px; }
+    /* Agent roster responsive sizing: tighten horizontal whitespace as the iframe narrows.
+       Keep the roster inline with the queue and readable; do not scale the whole page. */
+    .app.narrow-50 .agent-details { padding-left: 8px; padding-right: 8px; }
+    .app.narrow-50 .agent-table th,
+    .app.narrow-50 .agent-table td { padding-left: 4px; padding-right: 4px; }
+    .app.narrow-50 .agent-table th:nth-child(1) { width: 40%; }
+    .app.narrow-50 .agent-table th:nth-child(2) { width: 28%; }
+    .app.narrow-50 .agent-table th:nth-child(3) { width: 18%; }
+    .app.narrow-50 .agent-table th:nth-child(4) { width: 14%; }
+    .app.narrow-50 .agent-cell-name { gap: 5px; }
+    .app.narrow-50 .agent-avatar { width: 24px; height: 24px; }
+    .app.narrow-50 .agent-name,
+    .app.narrow-50 .agent-status,
+    .app.narrow-50 .status-time,
+    .app.narrow-50 .status-duration { font-size: 11px; }
+    .app.narrow-50 .agent-details-title { font-size: 12px; }
+    .app.narrow-50 .agent-details-meta { font-size: 9px; }
+
+    .app.narrow-25 .agent-details { padding: 6px 5px 7px; }
+    .app.narrow-25 .agent-details-header { gap: 4px; margin-bottom: 4px; }
+    .app.narrow-25 .agent-table th,
+    .app.narrow-25 .agent-table td { padding-left: 2px; padding-right: 2px; }
+    .app.narrow-25 .agent-table th:nth-child(1) { width: 40%; }
+    .app.narrow-25 .agent-table th:nth-child(2) { width: 27%; }
+    .app.narrow-25 .agent-table th:nth-child(3) { width: 18%; }
+    .app.narrow-25 .agent-table th:nth-child(4) { width: 15%; }
+    .app.narrow-25 .agent-cell-name { gap: 3px; }
+    .app.narrow-25 .agent-avatar { width: 18px; height: 18px; }
+    .app.narrow-25 .agent-name,
+    .app.narrow-25 .agent-status,
+    .app.narrow-25 .status-time,
+    .app.narrow-25 .status-duration { font-size: 9px; }
+    .app.narrow-25 .agent-details-title { font-size: 10px; }
+    .app.narrow-25 .agent-details-meta { font-size: 8px; }
   </style>
 </head>
 <body>
@@ -1519,7 +1553,7 @@
       if (!app) return;
       const w = Number.isFinite(width) ? width : app.getBoundingClientRect().width;
       app.classList.toggle('narrow-50', w <= 900);
-      app.classList.toggle('narrow-25', w <= 480);
+      app.classList.toggle('narrow-25', w <= 560);
     }
 
     function startResponsiveObserver() {
