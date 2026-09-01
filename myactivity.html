@@ -944,17 +944,10 @@
         .join(' ');
     }
 
-    function presenceStatusMeta(member) {
-      const systemPresence = member?.user?.presence?.presenceDefinition?.systemPresence
-        || member?.user?.presence?.systemPresence
-        || member?.presence?.presenceDefinition?.systemPresence
-        || member?.presence?.systemPresence
-        || 'Unknown';
-      const key = String(systemPresence).toUpperCase();
-      if (['AVAILABLE', 'ON_QUEUE'].includes(key)) return { label: normaliseStatusLabel(systemPresence), cls: 'status-available' };
-      if (['BUSY', 'AWAY', 'MEAL', 'BREAK', 'TRAINING', 'MEETING'].includes(key)) return { label: normaliseStatusLabel(systemPresence), cls: 'status-busy' };
-      if (['DO_NOT_DISTURB', 'OFFLINE', 'NOT_RESPONDING'].includes(key)) return { label: normaliseStatusLabel(systemPresence), cls: 'status-red' };
-      return { label: normaliseStatusLabel(systemPresence), cls: 'status-gray' };
+    function presenceDefinition(member) {
+      return member?.user?.presence?.presenceDefinition
+        || member?.presence?.presenceDefinition
+        || null;
     }
 
     function routingStatusValue(member) {
@@ -965,18 +958,21 @@
         || 'OFF_QUEUE';
     }
 
-    function presenceDefinition(member) {
-      return member?.user?.presence?.presenceDefinition
-        || member?.presence?.presenceDefinition
-        || null;
-    }
-
     function systemPresenceValue(member) {
       const def = presenceDefinition(member);
       return def?.systemPresence
         || member?.user?.presence?.systemPresence
         || member?.presence?.systemPresence
         || 'UNKNOWN';
+    }
+
+    function presenceDisplayName(member) {
+      const def = presenceDefinition(member);
+      return def?.name
+        || def?.displayName
+        || member?.user?.presence?.presenceDefinition?.name
+        || member?.user?.presence?.presenceDefinition?.displayName
+        || normaliseStatusLabel(systemPresenceValue(member));
     }
 
     function memberDisplayName(member) {
@@ -995,23 +991,38 @@
       return String(systemPresenceValue(member)).toUpperCase() === 'OFFLINE';
     }
 
-    function combinedAgentStatus(member) {
-      const presence = String(systemPresenceValue(member)).toUpperCase();
-      const routing = String(routingStatusValue(member)).toUpperCase();
-      if (routing === 'INTERACTING') return { label: 'In Conversation', cls: 'status-busy', routing };
-      if (routing === 'COMMUNICATING') return { label: 'Communicating', cls: 'status-busy', routing };
-      if (routing === 'NOT_RESPONDING') return { label: 'Not Responding', cls: 'status-red', routing };
-      if (routing === 'IDLE') return { label: 'Available', cls: 'status-available', routing };
-      if (routing !== 'OFF_QUEUE') return { label: normaliseStatusLabel(routing), cls: 'status-busy', routing };
+    function routingStatusMeta(routing) {
+      switch (String(routing || '').toUpperCase()) {
+        case 'INTERACTING': return { label: 'Interacting', cls: 'status-busy' };
+        case 'COMMUNICATING': return { label: 'Communicating', cls: 'status-busy' };
+        case 'IDLE': return { label: 'Idle', cls: 'status-available' };
+        case 'NOT_RESPONDING': return { label: 'Not Responding', cls: 'status-red' };
+        case 'OFF_QUEUE': return null;
+        default: return { label: normaliseStatusLabel(routing), cls: 'status-busy' };
+      }
+    }
 
-      if (presence === 'AVAILABLE' || presence === 'ON_QUEUE') return { label: 'Available', cls: 'status-available', routing };
-      if (['BUSY', 'AWAY', 'MEAL', 'BREAK', 'TRAINING', 'MEETING'].includes(presence)) return { label: normaliseStatusLabel(presence), cls: 'status-busy', routing };
-      if (['DO_NOT_DISTURB', 'NOT_RESPONDING'].includes(presence)) return { label: normaliseStatusLabel(presence), cls: 'status-red', routing };
-      return { label: normaliseStatusLabel(presence), cls: 'status-gray', routing };
+    function presenceStatusMeta(member) {
+      const key = String(systemPresenceValue(member)).toUpperCase();
+      const label = presenceDisplayName(member);
+      if (['AVAILABLE', 'ON_QUEUE'].includes(key)) return { label, cls: 'status-available' };
+      if (['BUSY', 'AWAY', 'MEAL', 'BREAK', 'TRAINING', 'MEETING'].includes(key)) return { label, cls: 'status-busy' };
+      if (['DO_NOT_DISTURB', 'NOT_RESPONDING', 'OFFLINE'].includes(key)) return { label, cls: 'status-red' };
+      return { label, cls: 'status-gray' };
+    }
+
+    function combinedAgentStatus(member) {
+      const routing = String(routingStatusValue(member)).toUpperCase();
+      const routingMeta = routingStatusMeta(routing);
+      // When the agent is on queue, routing status is the operational status
+      // that should be shown. When off queue, fall back to the user's presence.
+      if (routingMeta) return { ...routingMeta, source: 'routing', routing };
+      const presenceMeta = presenceStatusMeta(member);
+      return { ...presenceMeta, source: 'presence', routing };
     }
 
     function statusStartTime(member, combined) {
-      if (combined.routing && combined.routing !== 'OFF_QUEUE') {
+      if (combined.source === 'routing') {
         const routingStart = member?.routingStatus?.startTime || member?.user?.routingStatus?.startTime;
         if (routingStart) return routingStart;
       }
