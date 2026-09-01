@@ -22,21 +22,24 @@
     html, body { height: 100%; }
     body {
       margin: 0;
+      overflow: auto;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: radial-gradient(1200px 700px at 15% 0%, #eef4ff 0%, var(--bg) 45%, #f8fafc 100%);
       color: var(--text);
     }
     .app {
-      min-height: 100vh;
+      width: 1600px;
+      min-height: var(--page-height, 100vh);
       padding: 10px;
+      margin: 0 auto;
       display: flex;
       justify-content: center;
     }
     .shell {
-      width: min(1600px, 100%);
+      width: 1580px;
       display: grid;
       gap: 10px;
-      min-height: calc(100vh - 20px);
+      min-height: calc(var(--page-height, 100vh) - 20px);
       grid-template-rows: auto minmax(0, 1fr);
     }
     .topbar, .section {
@@ -254,93 +257,81 @@
       height: 100%;
       overflow: auto;
     }
-    .agent-drawer {
-      position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      width: var(--agent-pane-width, 25%);
-      min-width: 20%;
-      max-width: 100%;
-      display: none;
-      flex-direction: column;
-      background: #fff;
-      border-left: 1px solid #dfe7f2;
-      box-shadow: -14px 0 36px rgba(15,23,42,.12);
-      z-index: 12;
-      overflow: hidden;
-    }
-    .agent-drawer.show { display: flex; }
-    .agent-resize-handle {
-      position: absolute;
-      left: -4px;
-      top: 0;
-      bottom: 0;
-      width: 8px;
-      cursor: col-resize;
-      z-index: 20;
-      background: transparent;
-    }
-    .agent-resize-handle::after {
-      content: '';
-      position: absolute;
-      left: 3px;
-      top: 50%;
-      width: 3px;
-      height: 54px;
-      transform: translateY(-50%);
-      border-radius: 99px;
-      background: #cbd5e1;
-      opacity: .7;
-    }
-    .agent-resize-handle:hover::after,
-    .agent-resize-handle.dragging::after { background: #2563eb; opacity: 1; }
-    .agent-drawer-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--line);
-      background: linear-gradient(180deg, #fff, #fbfcff);
-      flex: 0 0 auto;
-    }
-    .agent-drawer-title { font-weight: 800; color: #25314a; }
-    .agent-drawer-meta { margin-top: 2px; font-size: 12px; color: var(--muted); }
-    .agent-drawer-actions { display: flex; align-items: center; gap: 6px; }
-    .drawer-btn {
-      border: 1px solid var(--line);
-      background: #fff;
-      border-radius: 9px;
-      width: 32px;
-      height: 32px;
-      cursor: pointer;
-      color: #475569;
-      font: inherit;
-      font-weight: 700;
-    }
-    .drawer-btn:hover { border-color: #bfdbfe; color: #2563eb; }
-    .agent-drawer-body { flex: 1; min-height: 0; overflow: auto; padding: 10px; background: #f8fafc; }
-    .agent-group + .agent-group { margin-top: 12px; }
-    .agent-group-header {
-      padding: 8px 10px;
-      font-size: 12px;
-      font-weight: 800;
-      color: #475569;
-      text-transform: uppercase;
-      letter-spacing: .04em;
-    }
-    .agent-table {
+    table.queue-table {
       width: 100%;
+      min-width: 0;
+      table-layout: fixed;
       border-collapse: separate;
       border-spacing: 0;
-      overflow: hidden;
+    }
+    .queue-table th,
+    .queue-table td {
+      padding: clamp(4px, 0.75vw, 14px) clamp(4px, 0.8vw, 16px);
+    }
+    .queue-table thead th {
+      font-size: clamp(8px, 0.72vw, 13px);
+      line-height: 1.12;
+    }
+    .queue-table tbody td {
+      font-size: clamp(8px, 0.72vw, 13px);
+    }
+    .queue-table th:nth-child(1) { width: 14%; }
+    .queue-table th:nth-child(2) { width: 7%; }
+    .queue-table th:nth-child(3) { width: 7%; }
+    .queue-table th:nth-child(4) { width: 8%; }
+    .queue-table th:nth-child(5) { width: 6%; }
+    .queue-table th:nth-child(6) { width: 6%; }
+    .queue-table th:nth-child(7) { width: 19%; }
+    .queue-table th:nth-child(8) { width: 7%; }
+    .queue-table th:nth-child(9) { width: 7%; }
+    .queue-table th:nth-child(10) { width: 6%; }
+    .queue-table th:nth-child(11) { width: 6%; }
+    .queue-table th:nth-child(12) { width: 3%; }
+    .metric-main { font-size: clamp(14px, 1.15vw, 22px); }
+    .service-main { font-size: clamp(13px, 1.05vw, 20px); }
+    .mini-line { gap: clamp(3px, 0.45vw, 8px); font-size: clamp(7px, 0.68vw, 12px); }
+    .media-stack { gap: 2px; }
+    .media-line { gap: clamp(2px, 0.3vw, 5px); }
+    .media-ico { font-size: clamp(9px, 0.8vw, 14px); }
+    .presence-cell { min-width: 0; }
+    .presence-summary { gap: clamp(4px, 0.45vw, 8px); }
+    .presence-labels { font-size: clamp(8px, 0.72vw, 13px); gap: clamp(2px, 0.3vw, 5px); }
+    .presence-item { grid-template-columns: clamp(6px, 0.55vw, 10px) minmax(0, 1fr) auto; gap: clamp(3px, 0.4vw, 8px); }
+    .presence-dot { width: clamp(6px, 0.55vw, 10px); height: clamp(6px, 0.55vw, 10px); }
+    .presence-label { overflow: hidden; text-overflow: ellipsis; }
+    .presence-bar { width: 100%; max-width: 180px; height: clamp(7px, 0.6vw, 12px); }
+    .center-cell { white-space: nowrap; }
+    .service-sub { margin-top: clamp(2px, 0.35vw, 6px); font-size: clamp(7px, 0.68vw, 13px); }
+    .agent-detail-row td {
+      padding: 0;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--line);
+    }
+    .agent-details {
+      padding: clamp(8px, 0.7vw, 14px) clamp(10px, 1vw, 18px) clamp(10px, 0.8vw, 16px);
+      background: linear-gradient(180deg, #f8fafc, #f4f7fb);
+    }
+    .agent-details-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .agent-details-title { font-size: clamp(11px, 0.82vw, 15px); font-weight: 800; color: #334155; }
+    .agent-details-meta { font-size: clamp(8px, 0.65vw, 12px); color: var(--muted); white-space: nowrap; }
+    .agent-table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: separate;
+      border-spacing: 0;
       border: 1px solid #e7edf5;
-      border-radius: 12px;
+      border-radius: 10px;
+      overflow: hidden;
       background: #fff;
     }
     .agent-table th, .agent-table td {
-      padding: 9px 10px;
+      padding: clamp(6px, 0.55vw, 10px) clamp(7px, 0.65vw, 12px);
       border-bottom: 1px solid #edf1f7;
       text-align: left;
       vertical-align: middle;
@@ -348,46 +339,40 @@
     .agent-table th {
       background: #f8fafc;
       color: #64748b;
-      font-size: 10px;
+      font-size: clamp(7px, 0.58vw, 10px);
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: .04em;
       white-space: nowrap;
     }
+    .agent-table td { font-size: clamp(8px, 0.7vw, 13px); }
     .agent-table tr:last-child td { border-bottom: 0; }
-    .agent-cell-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .agent-table th:nth-child(1) { width: 38%; }
+    .agent-table th:nth-child(2) { width: 27%; }
+    .agent-table th:nth-child(3) { width: 18%; }
+    .agent-table th:nth-child(4) { width: 17%; }
+    .agent-cell-name { display: flex; align-items: center; gap: clamp(6px, 0.55vw, 9px); min-width: 0; }
     .agent-avatar {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      background: #eaf2ff;
-      color: #2563eb;
-      font-weight: 800;
-      font-size: 11px;
-      overflow: hidden;
-      flex: 0 0 auto;
+      width: clamp(24px, 1.7vw, 32px);
+      height: clamp(24px, 1.7vw, 32px);
+      border-radius: 50%; display: grid; place-items: center;
+      background: #eaf2ff; color: #2563eb; font-weight: 800;
+      font-size: clamp(8px, 0.65vw, 11px); overflow: hidden; flex: 0 0 auto;
     }
     .agent-avatar img { width: 100%; height: 100%; object-fit: cover; }
     .agent-name { font-weight: 700; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .agent-status-cell { white-space: nowrap; }
-    .agent-status { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; }
-    .agent-status-sub { margin-top: 3px; font-size: 11px; color: var(--muted); }
+    .agent-status { display: inline-flex; align-items: center; gap: clamp(4px, 0.4vw, 7px); font-weight: 700; max-width: 100%; }
     .status-time { white-space: nowrap; font-weight: 600; color: #334155; font-variant-numeric: tabular-nums; }
     .status-duration { white-space: nowrap; font-weight: 800; color: #334155; font-variant-numeric: tabular-nums; }
-    .status-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
-    .status-available { background: #62b246; }
-    .status-busy { background: #f59e0b; }
-    .status-red { background: #dc2626; }
-    .status-gray { background: #94a3b8; }
-    .agent-queue-cell { white-space: nowrap; color: #475569; font-weight: 600; }
-    .agent-empty, .agent-error {
-      padding: 16px;
+    .status-dot { width: clamp(7px, 0.55vw, 9px); height: clamp(7px, 0.55vw, 9px); border-radius: 50%; flex: 0 0 auto; }
+    .agent-empty, .agent-error, .agent-loading {
+      padding: clamp(10px, 0.7vw, 16px);
       border: 1px dashed #dbe4f0;
-      border-radius: 12px;
+      border-radius: 10px;
       color: var(--muted);
       background: #fff;
+      font-size: clamp(8px, 0.7vw, 13px);
     }
     .agent-error { color: #991b1b; background: #fef2f2; border-color: #fecaca; }
     .queue-clickable { cursor: pointer; }
@@ -396,10 +381,8 @@
     .presence-clickable:hover .presence-labels, .presence-clickable:hover .presence-bar { opacity: .88; }
     .row-expanded td { background: #fbfdff; }
     .row-expanded .queue-chevron { transform: rotate(90deg); color: #2563eb; }
-    .table-shaded { width: 100%; height: 100%; }
-    @media (max-width: 900px) {
-      .agent-table th, .agent-table td { padding: 8px 8px; }
-      .agent-drawer { min-width: 45%; }
+    @media (max-width: 720px) {
+      .app { padding: 6px; }
     }
     .tiny { font-size: 12px; color: var(--muted); }
     .health { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; }
@@ -512,7 +495,7 @@
         <div id="banner"></div>
         <div class="dashboard-content" id="dashboardContent">
           <div class="table-wrap">
-            <table>
+            <table class="queue-table">
               <thead>
                 <tr>
                   <th>Queue Name</th>
@@ -532,10 +515,6 @@
               <tbody id="rows"></tbody>
             </table>
           </div>
-          <aside class="agent-drawer" id="agentDrawer" aria-label="Current agents">
-            <div class="agent-resize-handle" id="agentResizeHandle" title="Drag to resize"></div>
-            <div id="agentDrawerContent"></div>
-          </aside>
         </div>
         <div class="footerbar">
           <div class="tiny" id="footerText">Enter a Client ID and connect.</div>
@@ -558,7 +537,6 @@
     const TOKEN_KEY = 'genesys.queue.activity.pkce.token.v2';
     const VERIFIER_KEY = 'genesys.queue.activity.pkce.verifier.v2';
     const STATE_KEY = 'genesys.queue.activity.pkce.state.v2';
-    const PANE_WIDTH_KEY = 'genesys.queue.activity.agentpane.width.v1';
 
     const LOGIN_HOST = 'login.mypurecloud.de';
     const API_HOST = 'api.mypurecloud.de';
@@ -567,24 +545,6 @@
     const MEDIA_TYPES = ['voice', 'email'];
 
     const el = (id) => document.getElementById(id);
-
-    function loadAgentPanePercent() {
-      try {
-        const value = Number(localStorage.getItem(PANE_WIDTH_KEY));
-        return Number.isFinite(value) ? Math.min(100, Math.max(20, value)) : 25;
-      } catch {
-        return 25;
-      }
-    }
-
-    function setAgentPanePercent(value, persist = true) {
-      state.agentPanePercent = Math.min(100, Math.max(20, Number(value) || 25));
-      el('agentDrawer')?.style.setProperty('--agent-pane-width', `${state.agentPanePercent}%`);
-      el('dashboardContent')?.style.setProperty('--agent-pane-width', `${state.agentPanePercent}%`);
-      if (persist) {
-        try { localStorage.setItem(PANE_WIDTH_KEY, String(Math.round(state.agentPanePercent))); } catch {}
-      }
-    }
 
     const state = {
       token: null,
@@ -601,7 +561,6 @@
       refreshTimer: null,
       loading: false,
       lastRefresh: null,
-      agentPanePercent: loadAgentPanePercent(),
     };
 
     const DEFAULTS = {
@@ -1138,12 +1097,11 @@
       return `<div class="agent-avatar">${escapeHtml(initials)}</div>`;
     }
 
-    function agentRowMarkup(member, queueName = '', includeQueue = false) {
+    function agentRowMarkup(member) {
       const combined = combinedAgentStatus(member);
       const since = statusStartTime(member, combined);
       return `
         <tr>
-          ${includeQueue ? `<td class="agent-queue-cell">${escapeHtml(queueName)}</td>` : ''}
           <td>
             <div class="agent-cell-name">
               ${avatarMarkup(member)}
@@ -1158,82 +1116,29 @@
         </tr>`;
     }
 
-    function renderAgentDrawer() {
-      const drawer = el('agentDrawer');
-      const content = el('agentDrawerContent');
-      if (!drawer || !content) return;
-      setAgentPanePercent(state.agentPanePercent, false);
-      const selectedQueues = state.queues.filter((q) => state.expandedQueues.has(q.id));
-      if (!selectedQueues.length) {
-        drawer.classList.remove('show');
-        content.innerHTML = '';
-        return;
-      }
+    function agentDetailMarkup(queue, members, loading, error) {
+      if (loading) return `<div class="agent-loading">Loading current agents...</div>`;
+      if (error) return `<div class="agent-error">${escapeHtml(error)}</div>`;
+      const agents = (members || []).filter((member) => !isOfflineMember(member));
+      if (!agents.length) return `<div class="agent-empty">No logged-in agents are currently in ${escapeHtml(queue.name)}.</div>`;
+      const rows = agents.map((member) => agentRowMarkup(member)).join('');
+      return `<table class="agent-table"><thead><tr><th>Agent</th><th>Status</th><th>Status Since</th><th>Duration</th></tr></thead><tbody>${rows}</tbody></table>`;
+    }
 
-      drawer.classList.add('show');
-      const multiQueue = selectedQueues.length > 1;
-      const queueRows = [];
-      let totalAgents = 0;
-      let loadingCount = 0;
-      let errorCount = 0;
-
-      for (const q of selectedQueues) {
-        if (state.agentLoading.has(q.id)) {
-          loadingCount += 1;
-          continue;
-        }
-        const err = state.agentErrors.get(q.id);
-        if (err) {
-          errorCount += 1;
-          continue;
-        }
+    function renderInlineAgentDetails(pageItems) {
+      const fragments = [];
+      const expanded = pageItems.filter((q) => state.expandedQueues.has(q.id));
+      const expandedCount = expanded.length;
+      for (const q of pageItems) {
+        if (!state.expandedQueues.has(q.id)) continue;
+        const loading = state.agentLoading.has(q.id);
+        const error = state.agentErrors.get(q.id) || '';
         const members = state.agentsByQueue.get(q.id) || [];
-        const agents = members.filter((member) => !isOfflineMember(member));
-        totalAgents += agents.length;
-        for (const member of agents) queueRows.push(agentRowMarkup(member, q.name, multiQueue));
+        const visibleCount = members.filter((m) => !isOfflineMember(m)).length;
+        const meta = loading ? 'Loading...' : error ? 'Unable to load agent details' : `${visibleCount} logged-in agent${visibleCount === 1 ? '' : 's'} · Offline agents hidden`;
+        fragments.push(`<tr class="agent-detail-row"><td colspan="12"><div class="agent-details"><div class="agent-details-header"><div class="agent-details-title">Current agents in ${escapeHtml(q.name)}</div><div class="agent-details-meta">${meta}${expandedCount > 1 ? ` · ${expandedCount} queues expanded` : ''}</div></div>${agentDetailMarkup(q, members, loading, error)}</div></td></tr>`);
       }
-
-      const cols = multiQueue ? 5 : 4;
-      let body = '';
-      if (queueRows.length) {
-        body = `<table class="agent-table">
-          <thead><tr>${multiQueue ? '<th>Queue</th>' : ''}<th>Agent</th><th>Status</th><th>Status Since</th><th>Duration</th></tr></thead>
-          <tbody>${queueRows.join('')}</tbody>
-        </table>`;
-      } else if (loadingCount) {
-        body = `<div class="agent-loading">Loading current agents...</div>`;
-      } else if (errorCount) {
-        const firstErrorQueue = selectedQueues.find((q) => state.agentErrors.has(q.id));
-        body = `<div class="agent-error">${escapeHtml(state.agentErrors.get(firstErrorQueue?.id) || 'Unable to load agent details.')}</div>`;
-      } else {
-        body = `<div class="agent-empty">No logged-in agents are currently in the selected queue${multiQueue ? 's' : ''}.</div>`;
-      }
-
-      const title = multiQueue
-        ? `${totalAgents} logged-in agents across ${selectedQueues.length} queues`
-        : `Current agents in ${escapeHtml(selectedQueues[0].name)}`;
-      const queueText = multiQueue ? 'Queue is shown for each agent' : 'Offline agents are hidden';
-
-      content.innerHTML = `
-        <div class="agent-drawer-header">
-          <div>
-            <div class="agent-drawer-title">${title}</div>
-            <div class="agent-drawer-meta">${queueText} · ${Math.round(state.agentPanePercent)}% width${loadingCount ? ` · ${loadingCount} queue${loadingCount === 1 ? '' : 's'} loading` : ''}</div>
-          </div>
-          <div class="agent-drawer-actions">
-            <button class="drawer-btn" id="agentWidthReset" title="Reset to 25% width" aria-label="Reset width">25%</button>
-            <button class="drawer-btn" id="agentWidthMax" title="Expand to full width" aria-label="Full width">↔</button>
-            <button class="drawer-btn" id="agentClose" title="Close agent details" aria-label="Close">×</button>
-          </div>
-        </div>
-        <div class="agent-drawer-body">${body}</div>`;
-
-      el('agentClose')?.addEventListener('click', () => {
-        state.expandedQueues.clear();
-        render();
-      });
-      el('agentWidthReset')?.addEventListener('click', () => setAgentPanePercent(25));
-      el('agentWidthMax')?.addEventListener('click', () => setAgentPanePercent(state.agentPanePercent >= 95 ? 25 : 100));
+      return fragments.join('');
     }
 
     async function getQueueMembers(queueId) {
@@ -1277,37 +1182,6 @@
         state.agentLoading.delete(queueId);
         render();
       }
-    }
-
-    function wireAgentResize() {
-      const handle = el('agentResizeHandle');
-      const content = el('dashboardContent');
-      if (!handle || !content) return;
-      let dragging = false;
-      const onMove = (event) => {
-        if (!dragging) return;
-        const rect = content.getBoundingClientRect();
-        const width = rect.right - event.clientX;
-        const pct = (width / rect.width) * 100;
-        setAgentPanePercent(pct, false);
-        renderAgentDrawer();
-      };
-      const onUp = () => {
-        if (!dragging) return;
-        dragging = false;
-        handle.classList.remove('dragging');
-        try { localStorage.setItem(PANE_WIDTH_KEY, String(Math.round(state.agentPanePercent))); } catch {}
-        document.body.style.userSelect = '';
-      };
-      handle.addEventListener('pointerdown', (event) => {
-        dragging = true;
-        handle.classList.add('dragging');
-        document.body.style.userSelect = 'none';
-        handle.setPointerCapture?.(event.pointerId);
-      });
-      handle.addEventListener('pointermove', onMove);
-      handle.addEventListener('pointerup', onUp);
-      handle.addEventListener('pointercancel', onUp);
     }
 
     function renderPager(totalPages) {
@@ -1386,6 +1260,7 @@
               <td class="row-actions"><button class="action-btn" title="Show agents" aria-label="Show agents" data-expand-queue="${escapeHtml(q.id)}">${expanded ? '⌃' : '⋮'}</button></td>
             </tr>`;
         }).join('');
+        rows.insertAdjacentHTML('beforeend', renderInlineAgentDetails(pageItems));
 
         rows.querySelectorAll('[data-expand-queue]').forEach((node) => {
           node.addEventListener('click', (event) => {
@@ -1395,7 +1270,6 @@
         });
       }
       renderPager(totalPages);
-      renderAgentDrawer();
       const updated = state.lastRefresh ? state.lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Not connected';
       el('footerText').textContent = state.token
         ? `${state.queues.length} queues shown. Last updated ${updated}. Auto refresh every 30 seconds.`
@@ -1565,6 +1439,16 @@
       el('logoutBtn').addEventListener('click', logout);
       el('clientId').addEventListener('input', () => saveClientId());
     }
+
+    const DESIGN_WIDTH = 1600;
+    function updatePageScale() {
+      const viewportWidth = Math.max(320, document.documentElement.clientWidth || window.innerWidth || DESIGN_WIDTH);
+      const scale = Math.min(1, Math.max(0.2, viewportWidth / DESIGN_WIDTH));
+      document.body.style.zoom = String(scale);
+      document.documentElement.style.setProperty('--page-height', `${Math.ceil((window.innerHeight || 800) / scale)}px`);
+    }
+    window.addEventListener('resize', updatePageScale, { passive: true });
+    updatePageScale();
 
     async function init() {
       applyConfigToForm();
