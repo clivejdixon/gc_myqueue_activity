@@ -256,6 +256,8 @@
     .table-wrap {
       height: 100%;
       overflow: auto;
+      container-type: inline-size;
+      --table-gap: clamp(1px, 0.35vw, 10px);
     }
     table.queue-table {
       width: 100%;
@@ -264,9 +266,11 @@
       border-collapse: separate;
       border-spacing: 0;
     }
+    /* Horizontal cell padding scales with the available iframe width.
+       This is the primary control for shrinking the distance between columns. */
     .queue-table th,
     .queue-table td {
-      padding: clamp(4px, 0.75vw, 14px) clamp(4px, 0.8vw, 16px);
+      padding: clamp(4px, 0.55vw, 12px) var(--table-gap);
     }
     .queue-table thead th {
       font-size: clamp(8px, 0.72vw, 13px);
@@ -286,7 +290,7 @@
     .queue-table th:nth-child(9) { width: 7%; }
     .queue-table th:nth-child(10) { width: 6%; }
     .queue-table th:nth-child(11) { width: 6%; }
-    .queue-table th:nth-child(12) { width: 3%; }
+    .queue-table th:nth-child(12) { width: 2%; }
     .metric-main { font-size: clamp(14px, 1.15vw, 22px); }
     .service-main { font-size: clamp(13px, 1.05vw, 20px); }
     .mini-line { gap: clamp(3px, 0.45vw, 8px); font-size: clamp(7px, 0.68vw, 12px); }
@@ -331,7 +335,7 @@
       background: #fff;
     }
     .agent-table th, .agent-table td {
-      padding: clamp(6px, 0.55vw, 10px) clamp(7px, 0.65vw, 12px);
+      padding: clamp(6px, 0.5vw, 10px) var(--table-gap);
       border-bottom: 1px solid #edf1f7;
       text-align: left;
       vertical-align: middle;
@@ -403,7 +407,7 @@
     .queue-meta { display: flex; align-items: center; gap: 8px; min-width: 0; }
     .queue-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .row-actions { display: flex; justify-content: center; }
-    .action-btn { border: 0; background: transparent; color: #64748b; font-size: 22px; line-height: 1; cursor: pointer; padding: 0 4px; }
+    .action-btn { border: 0; background: transparent; color: #64748b; font-size: clamp(13px, 1.2vw, 22px); line-height: 1; cursor: pointer; padding: 0 clamp(1px, 0.2vw, 4px); }
     .footerbar {
       display: flex;
       justify-content: space-between;
@@ -461,6 +465,16 @@
     }
     .modal h2 { margin: 0 0 8px; }
     .modal p { color: var(--muted); margin: 0 0 16px; line-height: 1.5; }
+    @container (max-width: 900px) {
+      .queue-table { --compact-scale: 0.92; }
+      .queue-table th, .queue-table td { padding-left: clamp(1px, 0.28vw, 6px); padding-right: clamp(1px, 0.28vw, 6px); }
+      .presence-bar { max-width: 150px; }
+    }
+    @container (max-width: 650px) {
+      .queue-table { font-size: clamp(7px, 1.05cqw, 11px); }
+      .presence-bar { max-width: 125px; }
+    }
+
     @media (max-width: 900px) {
       .title { font-size: 20px; }
       .client-input { width: 260px; }
