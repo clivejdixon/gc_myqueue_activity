@@ -465,14 +465,76 @@
     }
     .modal h2 { margin: 0 0 8px; }
     .modal p { color: var(--muted); margin: 0 0 16px; line-height: 1.5; }
-    @container (max-width: 900px) {
-      .queue-table { --compact-scale: 0.92; }
-      .queue-table th, .queue-table td { padding-left: clamp(1px, 0.28vw, 6px); padding-right: clamp(1px, 0.28vw, 6px); }
-      .presence-bar { max-width: 150px; }
+    /* Responsive queue table tiers. The table remains inline and uses the same row data,
+       but progressively hides lower-priority columns as the iframe/container narrows. */
+    @container (max-width: 1100px) {
+      .queue-table th, .queue-table td {
+        padding-left: clamp(2px, 0.28cqw, 6px);
+        padding-right: clamp(2px, 0.28cqw, 6px);
+      }
+      .queue-table th:nth-child(6), .queue-table td:nth-child(6),
+      .queue-table th:nth-child(8), .queue-table td:nth-child(8),
+      .queue-table th:nth-child(9), .queue-table td:nth-child(9),
+      .queue-table th:nth-child(10), .queue-table td:nth-child(10),
+      .queue-table th:nth-child(11), .queue-table td:nth-child(11),
+      .queue-table th:nth-child(12), .queue-table td:nth-child(12) { display: none; }
+
+      .queue-table th:nth-child(1) { width: 27%; }
+      .queue-table th:nth-child(2) { width: 13%; }
+      .queue-table th:nth-child(3) { width: 13%; }
+      .queue-table th:nth-child(4) { width: 13%; }
+      .queue-table th:nth-child(5) { width: 34%; }
+      .presence-bar { max-width: 100%; }
+      .presence-summary { max-width: 100%; }
     }
-    @container (max-width: 650px) {
-      .queue-table { font-size: clamp(7px, 1.05cqw, 11px); }
-      .presence-bar { max-width: 125px; }
+
+    @container (max-width: 680px) {
+      /* Quarter-width style: keep only the most useful queue metrics. */
+      .queue-table th:nth-child(7), .queue-table td:nth-child(7) { display: none; }
+      .queue-table th:nth-child(1) { width: 32%; }
+      .queue-table th:nth-child(2) { width: 16%; }
+      .queue-table th:nth-child(3) { width: 16%; }
+      .queue-table th:nth-child(4) { width: 16%; }
+      .queue-table th:nth-child(5) { width: 20%; }
+
+      .queue-table thead th { font-size: clamp(7px, 1.5cqw, 10px); }
+      .queue-table tbody td { font-size: clamp(7px, 1.45cqw, 10px); }
+      .metric-main { font-size: clamp(12px, 2.3cqw, 16px); }
+      .service-main { font-size: clamp(11px, 2.1cqw, 15px); }
+      .mini-line { font-size: clamp(6px, 1.25cqw, 9px); gap: 2px; }
+      .media-ico { font-size: clamp(8px, 1.45cqw, 10px); }
+      .service-sub { font-size: clamp(6px, 1.2cqw, 9px); }
+      .presence-bar { display: none; }
+      .queue-chevron { font-size: clamp(12px, 2cqw, 16px); }
+    }
+
+    @container (max-width: 430px) {
+      .queue-table th, .queue-table td {
+        padding-left: 1px;
+        padding-right: 1px;
+      }
+      .queue-table th:nth-child(1) { width: 30%; }
+      .queue-table th:nth-child(2) { width: 17%; }
+      .queue-table th:nth-child(3) { width: 17%; }
+      .queue-table th:nth-child(4) { width: 16%; }
+      .queue-table th:nth-child(5) { width: 20%; }
+      .queue-name { gap: 3px; }
+      .queue-name-text { max-width: 100%; }
+      .metric-main { font-size: clamp(11px, 2.6cqw, 14px); }
+    }
+
+
+    @container (max-width: 680px) {
+      .agent-details { padding: 7px 8px 9px; }
+      .agent-details-header { gap: 5px; margin-bottom: 5px; }
+      .agent-table th, .agent-table td { padding-left: 2px; padding-right: 2px; }
+      .agent-table th { font-size: clamp(6px, 1.1cqw, 8px); }
+      .agent-table td { font-size: clamp(7px, 1.35cqw, 9px); }
+      .agent-table th:nth-child(1) { width: 39%; }
+      .agent-table th:nth-child(2) { width: 27%; }
+      .agent-table th:nth-child(3) { width: 18%; }
+      .agent-table th:nth-child(4) { width: 16%; }
+      .agent-avatar { width: clamp(18px, 2.8cqw, 24px); height: clamp(18px, 2.8cqw, 24px); }
     }
 
     @media (max-width: 900px) {
@@ -481,8 +543,7 @@
       .topbar { min-height: 50px; }
     }
     @media (max-width: 720px) {
-      .app { padding: 8px; }
-      table { min-width: 1100px; }
+      .app { padding: 6px; }
     }
   </style>
 </head>
