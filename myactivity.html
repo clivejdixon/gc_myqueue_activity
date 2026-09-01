@@ -328,35 +328,46 @@
     .agent-details-meta { font-size: clamp(8px, 0.65vw, 12px); color: var(--muted); white-space: nowrap; }
     .agent-table {
       width: 100%;
-      table-layout: fixed;
-      border-collapse: separate;
-      border-spacing: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 38fr) minmax(0, 27fr) minmax(0, 18fr) minmax(0, 17fr);
       border: 1px solid #e7edf5;
       border-radius: 10px;
       overflow: hidden;
       background: #fff;
     }
-    .agent-table th, .agent-table td {
-      padding: clamp(6px, 0.5vw, 10px) var(--table-gap);
-      border-bottom: 1px solid #edf1f7;
-      text-align: left;
-      vertical-align: middle;
+    .agent-table > .agent-head,
+    .agent-table > .agent-row {
+      display: contents;
     }
-    .agent-table th {
+    .agent-table > .agent-head > div {
       background: #f8fafc;
       color: #64748b;
-      font-size: clamp(7px, 0.58vw, 10px);
+      font-size: clamp(9px, 0.62vw, 10px);
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: .04em;
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: clamp(6px, 0.45vw, 9px) clamp(4px, 0.35vw, 8px);
+      border-bottom: 1px solid #edf1f7;
     }
-    .agent-table td { font-size: clamp(8px, 0.7vw, 13px); }
-    .agent-table tr:last-child td { border-bottom: 0; }
-    .agent-table th:nth-child(1) { width: 38%; }
-    .agent-table th:nth-child(2) { width: 27%; }
-    .agent-table th:nth-child(3) { width: 18%; }
-    .agent-table th:nth-child(4) { width: 17%; }
+    .agent-table > .agent-row > div {
+      padding: clamp(7px, 0.55vw, 10px) clamp(4px, 0.35vw, 8px);
+      border-bottom: 1px solid #edf1f7;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .agent-table > .agent-row:last-child > div { border-bottom: 0; }
+    .agent-table .agent-status-cell,
+    .agent-table .status-time,
+    .agent-table .status-duration { min-width: 0; }
+    .agent-table .agent-status,
+    .agent-table .status-time,
+    .agent-table .status-duration {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .agent-cell-name { display: flex; align-items: center; gap: clamp(6px, 0.55vw, 9px); min-width: 0; }
     .agent-avatar {
       width: clamp(24px, 1.7vw, 32px);
@@ -540,38 +551,29 @@
     .app.narrow-25 .agent-status,
     .app.narrow-25 .status-time,
     .app.narrow-25 .status-duration { font-size: 9px; }
-    /* Agent roster responsive sizing: tighten horizontal whitespace as the iframe narrows.
-       Keep the roster inline with the queue and readable; do not scale the whole page. */
+    /* Agent roster: keep all four fields visible and contract column gaps with the available width. */
     .app.narrow-50 .agent-details { padding-left: 8px; padding-right: 8px; }
-    .app.narrow-50 .agent-table th,
-    .app.narrow-50 .agent-table td { padding-left: 4px; padding-right: 4px; }
-    .app.narrow-50 .agent-table th:nth-child(1) { width: 40%; }
-    .app.narrow-50 .agent-table th:nth-child(2) { width: 28%; }
-    .app.narrow-50 .agent-table th:nth-child(3) { width: 18%; }
-    .app.narrow-50 .agent-table th:nth-child(4) { width: 14%; }
-    .app.narrow-50 .agent-cell-name { gap: 5px; }
-    .app.narrow-50 .agent-avatar { width: 24px; height: 24px; }
+    .app.narrow-50 .agent-table { grid-template-columns: minmax(0, 36fr) minmax(0, 30fr) minmax(0, 18fr) minmax(0, 16fr); }
+    .app.narrow-50 .agent-table > .agent-head > div,
+    .app.narrow-50 .agent-table > .agent-row > div { padding-left: 3px; padding-right: 3px; }
     .app.narrow-50 .agent-name,
     .app.narrow-50 .agent-status,
     .app.narrow-50 .status-time,
     .app.narrow-50 .status-duration { font-size: 11px; }
+    .app.narrow-50 .agent-avatar { width: 22px; height: 22px; }
     .app.narrow-50 .agent-details-title { font-size: 12px; }
     .app.narrow-50 .agent-details-meta { font-size: 9px; }
 
-    .app.narrow-25 .agent-details { padding: 6px 5px 7px; }
-    .app.narrow-25 .agent-details-header { gap: 4px; margin-bottom: 4px; }
-    .app.narrow-25 .agent-table th,
-    .app.narrow-25 .agent-table td { padding-left: 2px; padding-right: 2px; }
-    .app.narrow-25 .agent-table th:nth-child(1) { width: 40%; }
-    .app.narrow-25 .agent-table th:nth-child(2) { width: 27%; }
-    .app.narrow-25 .agent-table th:nth-child(3) { width: 18%; }
-    .app.narrow-25 .agent-table th:nth-child(4) { width: 15%; }
-    .app.narrow-25 .agent-cell-name { gap: 3px; }
-    .app.narrow-25 .agent-avatar { width: 18px; height: 18px; }
+    .app.narrow-25 .agent-details { padding: 6px 4px 7px; }
+    .app.narrow-25 .agent-table { grid-template-columns: minmax(0, 35fr) minmax(0, 31fr) minmax(0, 18fr) minmax(0, 16fr); }
+    .app.narrow-25 .agent-table > .agent-head > div,
+    .app.narrow-25 .agent-table > .agent-row > div { padding-left: 2px; padding-right: 2px; }
     .app.narrow-25 .agent-name,
     .app.narrow-25 .agent-status,
     .app.narrow-25 .status-time,
-    .app.narrow-25 .status-duration { font-size: 9px; }
+    .app.narrow-25 .status-duration { font-size: 10px; }
+    .app.narrow-25 .agent-avatar { width: 18px; height: 18px; }
+    .app.narrow-25 .agent-cell-name { gap: 3px; }
     .app.narrow-25 .agent-details-title { font-size: 10px; }
     .app.narrow-25 .agent-details-meta { font-size: 8px; }
   </style>
@@ -1205,19 +1207,19 @@
       const combined = combinedAgentStatus(member);
       const since = statusStartTime(member, combined);
       return `
-        <tr>
-          <td>
+        <div class="agent-row">
+          <div>
             <div class="agent-cell-name">
               ${avatarMarkup(member)}
               <div class="agent-name">${escapeHtml(memberDisplayName(member))}</div>
             </div>
-          </td>
-          <td class="agent-status-cell">
-            <div class="agent-status"><span class="status-dot ${combined.cls}"></span>${escapeHtml(combined.label)}</div>
-          </td>
-          <td class="status-time">${escapeHtml(formatStatusTime(since))}</td>
-          <td class="status-duration" data-status-since="${since ? escapeHtml(since) : ''}">${escapeHtml(formatDurationSince(since))}</td>
-        </tr>`;
+          </div>
+          <div class="agent-status-cell">
+            <div class="agent-status"><span class="status-dot ${combined.cls}"></span><span>${escapeHtml(combined.label)}</span></div>
+          </div>
+          <div class="status-time">${escapeHtml(formatStatusTime(since))}</div>
+          <div class="status-duration" data-status-since="${since ? escapeHtml(since) : ''}">${escapeHtml(formatDurationSince(since))}</div>
+        </div>`;
     }
 
     function agentDetailMarkup(queue, members, loading, error) {
@@ -1226,7 +1228,7 @@
       const agents = (members || []).filter((member) => !isOfflineMember(member));
       if (!agents.length) return `<div class="agent-empty">No logged-in agents are currently in ${escapeHtml(queue.name)}.</div>`;
       const rows = agents.map((member) => agentRowMarkup(member)).join('');
-      return `<table class="agent-table"><thead><tr><th>Agent</th><th>Status</th><th>Status Since</th><th>Duration</th></tr></thead><tbody>${rows}</tbody></table>`;
+      return `<div class="agent-table"><div class="agent-head"><div>Agent</div><div>Status</div><div>Status Since</div><div>Duration</div></div>${rows}</div>`;
     }
 
     function renderInlineAgentDetails(pageItems) {
