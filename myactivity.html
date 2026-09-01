@@ -262,6 +262,7 @@
     table.queue-table {
       width: 100%;
       min-width: 0;
+      max-width: 100%;
       table-layout: fixed;
       border-collapse: separate;
       border-spacing: 0;
@@ -467,10 +468,11 @@
     .modal p { color: var(--muted); margin: 0 0 16px; line-height: 1.5; }
     /* Responsive queue table tiers. The table remains inline and uses the same row data,
        but progressively hides lower-priority columns as the iframe/container narrows. */
-    @container (max-width: 1100px) {
+    /* ~50% width tier: retain the core queue metrics and Presence Breakdown. */
+    @container (max-width: 900px) {
       .queue-table th, .queue-table td {
-        padding-left: clamp(2px, 0.28cqw, 6px);
-        padding-right: clamp(2px, 0.28cqw, 6px);
+        padding-left: clamp(2px, 0.42cqw, 6px);
+        padding-right: clamp(2px, 0.42cqw, 6px);
       }
       .queue-table th:nth-child(6), .queue-table td:nth-child(6),
       .queue-table th:nth-child(8), .queue-table td:nth-child(8),
@@ -488,8 +490,8 @@
       .presence-summary { max-width: 100%; }
     }
 
-    @container (max-width: 680px) {
-      /* Quarter-width style: keep only the most useful queue metrics. */
+    /* ~25% width tier: retain only the essential queue metrics. */
+    @container (max-width: 480px) {
       .queue-table th:nth-child(7), .queue-table td:nth-child(7) { display: none; }
       .queue-table th:nth-child(1) { width: 32%; }
       .queue-table th:nth-child(2) { width: 16%; }
@@ -504,7 +506,6 @@
       .mini-line { font-size: clamp(6px, 1.25cqw, 9px); gap: 2px; }
       .media-ico { font-size: clamp(8px, 1.45cqw, 10px); }
       .service-sub { font-size: clamp(6px, 1.2cqw, 9px); }
-      .presence-bar { display: none; }
       .queue-chevron { font-size: clamp(12px, 2cqw, 16px); }
     }
 
@@ -1515,15 +1516,9 @@
       el('clientId').addEventListener('input', () => saveClientId());
     }
 
-    const DESIGN_WIDTH = 1600;
-    function updatePageScale() {
-      const viewportWidth = Math.max(320, document.documentElement.clientWidth || window.innerWidth || DESIGN_WIDTH);
-      const scale = Math.min(1, Math.max(0.2, viewportWidth / DESIGN_WIDTH));
-      document.body.style.zoom = String(scale);
-      document.documentElement.style.setProperty('--page-height', `${Math.ceil((window.innerHeight || 800) / scale)}px`);
-    }
-    window.addEventListener('resize', updatePageScale, { passive: true });
-    updatePageScale();
+    // Responsive layout is handled by CSS container queries on the dashboard table.
+    // Do not apply document/body zoom here: zoom changes the visual scale but prevents
+    // the table container from crossing the intended 50% / 25% layout breakpoints.
 
     async function init() {
       applyConfigToForm();
