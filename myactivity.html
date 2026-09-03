@@ -380,6 +380,7 @@
     .agent-name { font-weight: 700; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .agent-status-cell { white-space: nowrap; }
     .agent-status { display: inline-flex; align-items: center; gap: clamp(4px, 0.4vw, 7px); font-weight: 700; max-width: 100%; }
+    .agent-secondary-status { margin: 2px 0 0 clamp(11px, 0.9vw, 16px); color: #64748b; font-size: clamp(8px, 0.58vw, 11px); line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .status-time { white-space: nowrap; font-weight: 600; color: #334155; font-variant-numeric: tabular-nums; }
     .status-duration { white-space: nowrap; font-weight: 800; color: #334155; font-variant-numeric: tabular-nums; }
     .status-dot { width: clamp(7px, 0.55vw, 9px); height: clamp(7px, 0.55vw, 9px); border-radius: 50%; flex: 0 0 auto; }
@@ -549,6 +550,7 @@
     .app.narrow-25 .agent-avatar { width: 19px; height: 19px; }
     .app.narrow-25 .agent-name,
     .app.narrow-25 .agent-status,
+    .app.narrow-25 .agent-secondary-status,
     .app.narrow-25 .status-time,
     .app.narrow-25 .status-duration { font-size: 9px; }
     /* Agent roster: keep all four fields visible and contract column gaps with the available width. */
@@ -558,6 +560,7 @@
     .app.narrow-50 .agent-table > .agent-row > div { padding-left: 3px; padding-right: 3px; }
     .app.narrow-50 .agent-name,
     .app.narrow-50 .agent-status,
+    .app.narrow-50 .agent-secondary-status,
     .app.narrow-50 .status-time,
     .app.narrow-50 .status-duration { font-size: 11px; }
     .app.narrow-50 .agent-avatar { width: 22px; height: 22px; }
@@ -570,6 +573,7 @@
     .app.narrow-25 .agent-table > .agent-row > div { padding-left: 2px; padding-right: 2px; }
     .app.narrow-25 .agent-name,
     .app.narrow-25 .agent-status,
+    .app.narrow-25 .agent-secondary-status,
     .app.narrow-25 .status-time,
     .app.narrow-25 .status-duration { font-size: 10px; }
     .app.narrow-25 .agent-avatar { width: 18px; height: 18px; }
@@ -643,6 +647,9 @@
     const TOKEN_KEY = 'genesys.queue.activity.pkce.token.v2';
     const VERIFIER_KEY = 'genesys.queue.activity.pkce.verifier.v2';
     const STATE_KEY = 'genesys.queue.activity.pkce.state.v2';
+    const USER_CACHE_KEY = 'genesys.queue.activity.user-cache.v1';
+    const QUEUE_CACHE_KEY = 'genesys.queue.activity.queue-cache.v1';
+    const PRESENCE_DEF_CACHE_KEY = 'genesys.queue.activity.presence-defs.v1';
 
     const LOGIN_HOST = 'login.mypurecloud.de';
     const API_HOST = 'api.mypurecloud.de';
@@ -663,6 +670,8 @@
       expandedQueues: new Set(),
       agentLoading: new Set(),
       agentErrors: new Map(),
+      presenceDefinitions: new Map(),
+      presenceDefinitionsLoaded: false,
       page: 1,
       refreshTimer: null,
       loading: false,
@@ -856,22 +865,68 @@
       return all;
     }
 
+    function loadCachedUserAndQueues(clientId) {
+      try {
+        const cachedUser = JSON.parse(sessionStorage.getItem(USER_CACHE_KEY) || 'null');
+        const cachedQueues = JSON.parse(sessionStorage.getItem(QUEUE_CACHE_KEY) || 'null');
+        if (cachedUser?.clientId === clientId && cachedUser?.user?.id && cachedQueues?.clientId === clientId && cachedQueues?.userId === cachedUser.user.id && Array.isArray(cachedQueues.queues)) {
+          return { user: cachedUser.user, queues: cachedQueues.queues };
+        }
+      } catch {}
+      return null;
+    }
+
+    function saveCachedUserAndQueues(clientId, user, queues) {
+      try {
+        sessionStorage.setItem(USER_CACHE_KEY, JSON.stringify({ clientId, user, cachedAt: Date.now() }));
+        sessionStorage.setItem(QUEUE_CACHE_KEY, JSON.stringify({ clientId, userId: user?.id, queues, cachedAt: Date.now() }));
+      } catch {}
+    }
+
     async function getMe() {
       return apiFetch('/api/v2/users/me');
     }
 
     async function getMemberQueuesForUser(userId) {
-      // Use the user-centric queue membership endpoint. This is both more
-      // efficient and more reliable than enumerating every queue and then
-      // querying members for each queue. The response represents the user's
-      // queue memberships; do not filter on joined because the dashboard is
-      // intended to show every queue the user is a member of, including
-      // queues that are currently inactive/unjoined.
       const queues = await getAllPages(`/api/v2/users/${encodeURIComponent(userId)}/queues`);
       return queues
         .filter((q) => q?.id && q?.name)
         .map((q) => ({ id: q.id, name: q.name, joined: q.joined !== false }))
         .sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    async function loadUserContext(force = false) {
+      const cfg = loadConfig();
+      if (!force) {
+        const cached = loadCachedUserAndQueues(cfg.clientId);
+        if (cached) {
+          state.me = cached.user;
+          state.queues = cached.queues;
+          return;
+        }
+      }
+      state.me = await getMe();
+      state.queues = await getMemberQueuesForUser(state.me.id);
+      saveCachedUserAndQueues(cfg.clientId, state.me, state.queues);
+    }
+
+    async function loadPresenceDefinitions() {
+      if (state.presenceDefinitionsLoaded) return;
+      try {
+        const cached = JSON.parse(sessionStorage.getItem(PRESENCE_DEF_CACHE_KEY) || 'null');
+        if (cached?.clientId === loadConfig().clientId && Array.isArray(cached.entities)) {
+          state.presenceDefinitions = new Map(cached.entities.filter((d) => d?.id).map((d) => [String(d.id), d]));
+          state.presenceDefinitionsLoaded = true;
+          return;
+        }
+      } catch {}
+      const res = await apiFetch('/api/v2/presence/definitions');
+      const entities = Array.isArray(res?.entities) ? res.entities : [];
+      state.presenceDefinitions = new Map(entities.filter((d) => d?.id).map((d) => [String(d.id), d]));
+      state.presenceDefinitionsLoaded = true;
+      try {
+        sessionStorage.setItem(PRESENCE_DEF_CACHE_KEY, JSON.stringify({ clientId: loadConfig().clientId, entities, cachedAt: Date.now() }));
+      } catch {}
     }
 
     function queueClause(queueIds) {
@@ -1119,6 +1174,31 @@
         || normaliseStatusLabel(systemPresenceValue(member));
     }
 
+    function memberOrganizationPresenceId(member) {
+      return member?.user?.presence?.organizationPresenceId
+        || member?.presence?.organizationPresenceId
+        || member?.user?.presence?.presenceDefinition?.id
+        || member?.presence?.presenceDefinition?.id
+        || null;
+    }
+
+    function secondaryPresenceLabel(member) {
+      const id = memberOrganizationPresenceId(member);
+      if (!id) return '';
+      const embedded = presenceDefinition(member);
+      const embeddedLabel = embedded?.name || embedded?.displayName;
+      if (embeddedLabel) {
+        const primary = String(systemPresenceValue(member) || '').toUpperCase();
+        if (embeddedLabel.toUpperCase() !== primary && embeddedLabel.toUpperCase() !== normaliseStatusLabel(primary).toUpperCase()) return embeddedLabel;
+      }
+      const def = state.presenceDefinitions.get(String(id));
+      const label = def?.name || def?.displayName || '';
+      if (!label) return '';
+      const primary = String(systemPresenceValue(member) || '').toUpperCase();
+      if (label.toUpperCase() === primary || label.toUpperCase() === normaliseStatusLabel(primary).toUpperCase()) return '';
+      return label;
+    }
+
     function memberDisplayName(member) {
       const first = member?.user?.firstName || member?.firstName || '';
       const last = member?.user?.lastName || member?.lastName || '';
@@ -1216,6 +1296,7 @@
           </div>
           <div class="agent-status-cell">
             <div class="agent-status"><span class="status-dot ${combined.cls}"></span><span>${escapeHtml(combined.label)}</span></div>
+            ${secondaryPresenceLabel(member) ? `<div class="agent-secondary-status">${escapeHtml(secondaryPresenceLabel(member))}</div>` : ''}
           </div>
           <div class="status-time">${escapeHtml(formatStatusTime(since))}</div>
           <div class="status-duration" data-status-since="${since ? escapeHtml(since) : ''}">${escapeHtml(formatDurationSince(since))}</div>
@@ -1263,6 +1344,13 @@
         if (entities.length < 100) break;
         pageNumber += 1;
       }
+      const needsPresenceDefinitionLookup = all.some((member) => {
+        const id = memberOrganizationPresenceId(member);
+        if (!id) return false;
+        const def = presenceDefinition(member);
+        return !(def?.name || def?.displayName);
+      });
+      if (needsPresenceDefinitionLookup) await loadPresenceDefinitions();
       return all.sort((a, b) => memberDisplayName(a).localeCompare(memberDisplayName(b)));
     }
 
@@ -1416,28 +1504,32 @@
       render();
     }
 
-    async function loadDashboard() {
+    async function refreshQueueSummary() {
+      if (!state.token?.access_token) throw new Error('Missing access token.');
+      const ids = state.queues.map((q) => q.id);
+      const { statuses, media, serviceLevels } = await queryQueueObservations(ids);
+      state.observationsByQueue = statuses;
+      state.mediaByQueue = media;
+      state.serviceLevelsByQueue = serviceLevels;
+      state.lastRefresh = new Date();
+      render();
+    }
+
+    async function loadDashboard({ forceContext = false, initial = false } = {}) {
       if (!state.token?.access_token) throw new Error('Missing access token.');
       state.loading = true;
       render();
       try {
-        state.me = await getMe();
-        const queues = await getMemberQueuesForUser(state.me.id);
-        state.queues = queues;
-        if (!queues.length) {
-          throw new Error(`No queue memberships were returned for ${state.me.name || state.me.email || state.me.id}. Verify the user has routing queue membership and that the OAuth client has routing:queue:view or routing:queue:join.`);
+        await loadUserContext(forceContext);
+        if (!state.queues.length) {
+          throw new Error(`No queue memberships were returned for ${state.me?.name || state.me?.email || state.me?.id}. Verify the user has routing queue membership and that the OAuth client has routing:queue:view or routing:queue:join.`);
         }
-        const ids = queues.map((q) => q.id);
-        const { statuses, media, serviceLevels } = await queryQueueObservations(ids);
-        state.observationsByQueue = statuses;
-        state.mediaByQueue = media;
-        state.serviceLevelsByQueue = serviceLevels;
-        state.agentsByQueue.clear();
-        state.agentErrors.clear();
-        state.lastRefresh = new Date();
-        state.page = 1;
-        render();
-        await refreshExpandedAgents();
+        await refreshQueueSummary();
+        if (initial) {
+          state.expandedQueues = new Set();
+          state.agentsByQueue.clear();
+          state.agentErrors.clear();
+        }
         startAutoRefresh();
       } finally {
         state.loading = false;
@@ -1448,7 +1540,7 @@
     function startAutoRefresh() {
       if (state.refreshTimer) clearInterval(state.refreshTimer);
       state.refreshTimer = setInterval(() => {
-        if (state.token?.access_token) loadDashboard().catch(showError);
+        if (state.token?.access_token) refreshQueueSummary().catch(showError);
       }, REFRESH_MS);
     }
 
@@ -1495,7 +1587,7 @@
       state.token = token;
       localStorage.setItem(TOKEN_KEY, JSON.stringify(token));
       window.history.replaceState({}, document.title, window.location.pathname);
-      await loadDashboard();
+      await loadDashboard({ forceContext: true, initial: true });
       return true;
     }
 
@@ -1510,6 +1602,9 @@
       localStorage.removeItem(TOKEN_KEY);
       sessionStorage.removeItem(VERIFIER_KEY);
       sessionStorage.removeItem(STATE_KEY);
+      sessionStorage.removeItem(USER_CACHE_KEY);
+      sessionStorage.removeItem(QUEUE_CACHE_KEY);
+      sessionStorage.removeItem(PRESENCE_DEF_CACHE_KEY);
       state.token = null;
       state.me = null;
       state.queues = [];
@@ -1537,7 +1632,7 @@
       el('refreshBtn').addEventListener('click', async () => {
         try {
           if (!state.token?.access_token) return;
-          await loadDashboard();
+          await refreshQueueSummary();
         } catch (err) {
           showError(err);
         }
@@ -1582,7 +1677,7 @@
       if (state.token?.access_token) {
         setConnectionPill('Connected', 'good');
         try {
-          await loadDashboard();
+          await loadDashboard({ initial: true });
           return;
         } catch (err) {
           showError(err);
