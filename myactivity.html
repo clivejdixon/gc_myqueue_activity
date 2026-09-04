@@ -384,6 +384,26 @@
     .status-time { white-space: nowrap; font-weight: 600; color: #334155; font-variant-numeric: tabular-nums; }
     .status-duration { white-space: nowrap; font-weight: 800; color: #334155; font-variant-numeric: tabular-nums; }
     .status-dot { width: clamp(7px, 0.55vw, 9px); height: clamp(7px, 0.55vw, 9px); border-radius: 50%; flex: 0 0 auto; }
+    .agent-sort-btn {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      margin: 0;
+      font: inherit;
+      color: inherit;
+      font-weight: inherit;
+      text-transform: inherit;
+      letter-spacing: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      max-width: 100%;
+    }
+    .agent-sort-btn:hover { color: #2563eb; }
+    .sort-indicator { font-size: 11px; line-height: 1; opacity: .9; }
+    .sort-indicator.muted { opacity: .35; }
     .agent-empty, .agent-error, .agent-loading {
       padding: clamp(10px, 0.7vw, 16px);
       border: 1px dashed #dbe4f0;
@@ -670,6 +690,7 @@
       expandedQueues: new Set(),
       agentLoading: new Set(),
       agentErrors: new Map(),
+      agentSort: { key: 'duration', dir: 'desc' },
       presenceDefinitions: new Map(),
       presenceDefinitionsLoaded: false,
       page: 1,
@@ -1318,6 +1339,36 @@
       return `<div class="agent-avatar">${escapeHtml(initials)}</div>`;
     }
 
+    function agentSortValue(member, key) {
+      const combined = combinedAgentStatus(member);
+      const since = statusStartTime(member, combined);
+      if (key === 'agent') return memberDisplayName(member).toLocaleLowerCase();
+      if (key === 'status') return combined.label.toLocaleLowerCase();
+      const t = since ? new Date(since).getTime() : 0;
+      return Number.isFinite(t) ? t : 0;
+    }
+
+    function sortAgents(agents) {
+      const { key, dir } = state.agentSort;
+      const factor = dir === 'asc' ? 1 : -1;
+      return [...agents].sort((a, b) => {
+        const av = agentSortValue(a, key);
+        const bv = agentSortValue(b, key);
+        if (av < bv) return -1 * factor;
+        if (av > bv) return 1 * factor;
+        return memberDisplayName(a).localeCompare(memberDisplayName(b));
+      });
+    }
+
+    function agentSortIndicator(key) {
+      if (state.agentSort.key !== key) return '<span class="sort-indicator muted">↕</span>';
+      return `<span class="sort-indicator">${state.agentSort.dir === 'asc' ? '↑' : '↓'}</span>`;
+    }
+
+    function agentHeaderMarkup(label, key) {
+      return `<button type="button" class="agent-sort-btn" data-agent-sort="${key}" title="Sort by ${label}">${label} ${agentSortIndicator(key)}</button>`;
+    }
+
     function agentRowMarkup(member) {
       const combined = combinedAgentStatus(member);
       const since = statusStartTime(member, combined);
@@ -1341,10 +1392,10 @@
     function agentDetailMarkup(queue, members, loading, error) {
       if (loading) return `<div class="agent-loading">Loading current agents...</div>`;
       if (error) return `<div class="agent-error">${escapeHtml(error)}</div>`;
-      const agents = (members || []).filter((member) => !isOfflineMember(member));
+      const agents = sortAgents((members || []).filter((member) => !isOfflineMember(member)));
       if (!agents.length) return `<div class="agent-empty">No logged-in agents are currently in ${escapeHtml(queue.name)}.</div>`;
       const rows = agents.map((member) => agentRowMarkup(member)).join('');
-      return `<div class="agent-table"><div class="agent-head"><div>Agent</div><div>Status</div><div>Status Since</div><div>Duration</div></div>${rows}</div>`;
+      return `<div class="agent-table"><div class="agent-head"><div>${agentHeaderMarkup('Agent','agent')}</div><div>${agentHeaderMarkup('Status','status')}</div><div>${agentHeaderMarkup('Status Since','since')}</div><div>${agentHeaderMarkup('Duration','duration')}</div></div>${rows}</div>`;
     }
 
     function renderInlineAgentDetails(pageItems) {
@@ -1494,6 +1545,20 @@
           node.addEventListener('click', (event) => {
             event.stopPropagation();
             toggleQueueAgents(node.getAttribute('data-expand-queue'));
+          });
+        });
+        rows.querySelectorAll('[data-agent-sort]').forEach((node) => {
+          node.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const key = node.getAttribute('data-agent-sort');
+            if (!key) return;
+            if (state.agentSort.key === key) {
+              state.agentSort.dir = state.agentSort.dir === 'asc' ? 'desc' : 'asc';
+            } else {
+              state.agentSort.key = key;
+              state.agentSort.dir = (key === 'duration' || key === 'since') ? 'desc' : 'asc';
+            }
+            render();
           });
         });
       }
