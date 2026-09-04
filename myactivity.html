@@ -600,6 +600,127 @@
     .app.narrow-25 .agent-cell-name { gap: 3px; }
     .app.narrow-25 .agent-details-title { font-size: 10px; }
     .app.narrow-25 .agent-details-meta { font-size: 8px; }
+
+    .view-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0;
+      padding: 2px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: #f8fafc;
+      flex: 0 0 auto;
+      box-shadow: inset 0 1px 2px rgba(15,23,42,.04);
+    }
+    .view-toggle button {
+      border: 0;
+      background: transparent;
+      color: #64748b;
+      padding: 7px 12px;
+      border-radius: 8px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .view-toggle button.active {
+      background: #fff;
+      color: #1d4ed8;
+      box-shadow: 0 2px 6px rgba(15,23,42,.08);
+    }
+    .division-view { display: none; height: 100%; overflow: auto; }
+    .division-view.active { display: block; }
+    .division-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: fixed;
+    }
+    .division-table th, .division-table td {
+      padding: clamp(5px, 0.55vw, 12px) clamp(4px, 0.5vw, 10px);
+      border-bottom: 1px solid #edf1f7;
+      background: #fff;
+      vertical-align: middle;
+    }
+    .division-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #fff;
+      text-align: left;
+      font-size: clamp(9px, .72vw, 13px);
+      color: #25314a;
+      white-space: nowrap;
+    }
+    .division-summary-row td { background: #fff; }
+    .division-summary-row td:nth-child(2), .division-summary-row td:nth-child(3) { text-align: center; }
+    .division-name-cell { font-weight: 700; cursor: pointer; }
+    .division-presence-cell { cursor: pointer; }
+    .division-agent-row td { background: #f8fafc; padding: 0; }
+    .division-detail-wrap {
+      padding: clamp(8px, .75vw, 16px) clamp(8px, 1vw, 18px) clamp(10px, .8vw, 16px);
+      background: linear-gradient(180deg, #f8fafc, #f4f7fb);
+    }
+    .division-detail-header {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 10px; margin-bottom: 8px;
+    }
+    .division-detail-title { font-size: clamp(11px, .82vw, 15px); font-weight: 800; color: #334155; }
+    .division-detail-meta { font-size: clamp(8px, .65vw, 12px); color: var(--muted); white-space: nowrap; }
+    .division-agent-grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: minmax(0, 26fr) minmax(0, 20fr) minmax(0, 31fr) minmax(0, 13fr) minmax(0, 10fr);
+      border: 1px solid #e7edf5;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .division-agent-grid .head, .division-agent-grid .row { display: contents; }
+    .division-agent-grid .head > div {
+      background: #f8fafc;
+      color: #64748b;
+      font-size: clamp(8px, .62vw, 10px);
+      font-weight: 800; text-transform: uppercase; letter-spacing: .04em;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      padding: clamp(6px,.45vw,9px) clamp(3px,.35vw,8px);
+      border-bottom: 1px solid #edf1f7;
+    }
+    .division-agent-grid .row > div {
+      padding: clamp(7px,.55vw,10px) clamp(3px,.35vw,8px);
+      border-bottom: 1px solid #edf1f7;
+      min-width: 0; overflow: hidden;
+    }
+    .division-agent-grid .row:last-child > div { border-bottom: 0; }
+    .division-agent-grid .agent-status,
+    .division-agent-grid .status-time,
+    .division-agent-grid .status-duration,
+    .division-queue-names { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .division-queue-names { color: #334155; font-weight: 600; }
+    .division-no-queues { color: #94a3b8; font-weight: 500; }
+    .division-summary-presence { display: flex; flex-direction: column; gap: 6px; }
+    .division-summary-presence-labels { display: flex; gap: clamp(6px,.6vw,12px); flex-wrap: wrap; align-items: center; font-size: clamp(8px,.7vw,13px); }
+    .division-summary-presence-item { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .division-summary-dot { width: clamp(6px,.5vw,10px); height: clamp(6px,.5vw,10px); border-radius: 50%; flex: 0 0 auto; }
+    .division-summary-bar { height: clamp(8px,.55vw,11px); width: 100%; max-width: 260px; display: flex; overflow: hidden; border-radius: 999px; background: #eef2f7; border: 1px solid #e6ebf3; }
+    .division-summary-bar .avail { background: linear-gradient(90deg, #6bbf59, #43a047); }
+    .division-summary-bar .busy { background: linear-gradient(90deg, #f8c34d, #f59e0b); }
+    .division-summary-bar .nr { background: linear-gradient(90deg, #f56565, #dc2626); }
+    @media (max-width: 720px) {
+      .view-toggle button { padding: 6px 9px; font-size: 12px; }
+    }
+    .app.narrow-50 .division-detail-wrap { padding-left: 8px; padding-right: 8px; }
+    .app.narrow-50 .division-agent-grid { grid-template-columns: minmax(0,24fr) minmax(0,20fr) minmax(0,30fr) minmax(0,14fr) minmax(0,12fr); }
+    .app.narrow-50 .division-agent-grid .head > div,
+    .app.narrow-50 .division-agent-grid .row > div { padding-left: 3px; padding-right: 3px; }
+    .app.narrow-50 .division-agent-grid .head > div,
+    .app.narrow-50 .division-agent-grid .row > div { font-size: 10px; }
+    .app.narrow-25 .division-detail-wrap { padding: 6px 4px 7px; }
+    .app.narrow-25 .division-agent-grid { grid-template-columns: minmax(0,22fr) minmax(0,21fr) minmax(0,29fr) minmax(0,15fr) minmax(0,13fr); }
+    .app.narrow-25 .division-agent-grid .head > div,
+    .app.narrow-25 .division-agent-grid .row > div { padding-left: 2px; padding-right: 2px; font-size: 9px; }
+
   </style>
 </head>
 <body>
@@ -608,6 +729,10 @@
       <header class="topbar">
         <div class="title-wrap">
           <h1 class="title">My Queue Activity</h1>
+          <div class="view-toggle" role="group" aria-label="View mode">
+            <button type="button" id="queueModeBtn" class="active" aria-pressed="true">Queue</button>
+            <button type="button" id="divisionModeBtn" aria-pressed="false">Division</button>
+          </div>
         </div>
         <div class="status-row">
           <div class="client-group">
@@ -624,6 +749,7 @@
       <section class="section" id="mainSection">
         <div id="banner"></div>
         <div class="dashboard-content" id="dashboardContent">
+          <div id="queueView">
           <div class="table-wrap">
             <table class="queue-table">
               <thead>
@@ -645,6 +771,8 @@
               <tbody id="rows"></tbody>
             </table>
           </div>
+          </div>
+          <div class="division-view" id="divisionView"></div>
         </div>
         <div class="footerbar">
           <div class="tiny" id="footerText">Enter a Client ID and connect.</div>
@@ -670,6 +798,7 @@
     const USER_CACHE_KEY = 'genesys.queue.activity.user-cache.v1';
     const QUEUE_CACHE_KEY = 'genesys.queue.activity.queue-cache.v1';
     const PRESENCE_DEF_CACHE_KEY = 'genesys.queue.activity.presence-defs.v1';
+    const DIVISION_QUEUE_CACHE_KEY = 'genesys.queue.activity.division-agent-queues.v1';
 
     const LOGIN_HOST = 'login.mypurecloud.de';
     const API_HOST = 'api.mypurecloud.de';
@@ -697,6 +826,15 @@
       refreshTimer: null,
       loading: false,
       lastRefresh: null,
+      mode: 'queue',
+      division: null,
+      divisionAgents: [],
+      divisionExpanded: false,
+      divisionLoading: false,
+      divisionError: '',
+      divisionQueueNamesByUser: new Map(),
+      divisionAgentSort: { key: 'duration', dir: 'desc' },
+      divisionQueueLoadingUsers: new Set(),
     };
 
     const DEFAULTS = {
@@ -1467,6 +1605,263 @@
       }
     }
 
+
+    function divisionFromUser(user) {
+      const d = user?.division || user?.divisionInfo || null;
+      if (d?.id) return { id: d.id, name: d.name || d.id };
+      return null;
+    }
+
+    function divisionPresenceCounts(agents) {
+      let available = 0;
+      let busy = 0;
+      let notResponding = 0;
+      for (const agent of agents) {
+        const routing = String(routingStatusValue(agent)).toUpperCase();
+        if (routing === 'NOT_RESPONDING') notResponding += 1;
+        const presence = String(systemPresenceValue(agent)).toUpperCase();
+        if (presence === 'AVAILABLE' || presence === 'ON_QUEUE') available += 1;
+        else if (presence === 'BUSY' || presence === 'AWAY' || presence === 'MEAL' || presence === 'BREAK' || presence === 'TRAINING' || presence === 'MEETING' || presence === 'DO_NOT_DISTURB') busy += 1;
+      }
+      return { available, busy, notResponding };
+    }
+
+    function divisionPresenceMarkup(agents) {
+      const c = divisionPresenceCounts(agents);
+      const total = Math.max(c.available + c.busy + c.notResponding, 0);
+      const denom = total || 1;
+      const bar = total
+        ? `<div class="avail" style="width:${Math.max(c.available / denom * 100, 2)}%"></div><div class="busy" style="width:${Math.max(c.busy / denom * 100, 2)}%"></div><div class="nr" style="width:${Math.max(c.notResponding / denom * 100, 2)}%"></div>`
+        : '<div class="avail" style="width:100%"></div>';
+      return `<div class="division-summary-presence"><div class="division-summary-presence-labels"><span class="division-summary-presence-item"><span class="division-summary-dot" style="background:#62b246"></span>Available ${c.available}</span><span class="division-summary-presence-item"><span class="division-summary-dot" style="background:#f59e0b"></span>Busy ${c.busy}</span><span class="division-summary-presence-item"><span class="division-summary-dot" style="background:#ef4444"></span>Not Responding ${c.notResponding}</span></div><div class="division-summary-bar">${bar}</div></div>`;
+    }
+
+    function divisionAgentSortValue(member, key) {
+      const combined = combinedAgentStatus(member);
+      const since = statusStartTime(member, combined);
+      if (key === 'agent') return memberDisplayName(member).toLocaleLowerCase();
+      if (key === 'queue') return String(member.__joinedQueueNames || '').toLocaleLowerCase();
+      if (key === 'status') return combined.label.toLocaleLowerCase();
+      const t = since ? new Date(since).getTime() : 0;
+      if (!Number.isFinite(t) || !t) return 0;
+      if (key === 'duration') return Date.now() - t;
+      return t;
+    }
+
+    function sortDivisionAgents(agents) {
+      const { key, dir } = state.divisionAgentSort;
+      const factor = dir === 'asc' ? 1 : -1;
+      return [...agents].sort((a, b) => {
+        const av = divisionAgentSortValue(a, key);
+        const bv = divisionAgentSortValue(b, key);
+        if (av < bv) return -1 * factor;
+        if (av > bv) return 1 * factor;
+        return memberDisplayName(a).localeCompare(memberDisplayName(b));
+      });
+    }
+
+    function divisionSortIndicator(key) {
+      if (state.divisionAgentSort.key !== key) return '<span class="sort-indicator muted">↕</span>';
+      return `<span class="sort-indicator">${state.divisionAgentSort.dir === 'asc' ? '↑' : '↓'}</span>`;
+    }
+
+    function divisionHeaderMarkup(label, key) {
+      return `<button type="button" class="agent-sort-btn" data-division-agent-sort="${key}" title="Sort by ${label}">${label} ${divisionSortIndicator(key)}</button>`;
+    }
+
+    function divisionAgentRowMarkup(member) {
+      const combined = combinedAgentStatus(member);
+      const since = statusStartTime(member, combined);
+      const queueText = member.__joinedQueueNames || '';
+      return `<div class="row">
+        <div><div class="agent-cell-name">${avatarMarkup(member)}<div class="agent-name">${escapeHtml(memberDisplayName(member))}</div></div></div>
+        <div><div class="division-queue-names ${queueText ? '' : 'division-no-queues'}">${escapeHtml(queueText || '—')}</div></div>
+        <div class="agent-status-cell"><div class="agent-status"><span class="status-dot ${combined.cls}"></span><span>${escapeHtml(combined.label)}</span></div>${secondaryPresenceLabel(member) ? `<div class="agent-secondary-status">${escapeHtml(secondaryPresenceLabel(member))}</div>` : ''}</div>
+        <div class="status-time">${escapeHtml(formatStatusTime(since))}</div>
+        <div class="status-duration" data-status-since="${since ? escapeHtml(since) : ''}">${escapeHtml(formatDurationSince(since))}</div>
+      </div>`;
+    }
+
+    function renderDivisionView() {
+      const view = el('divisionView');
+      if (!view) return;
+      const d = state.division;
+      if (!d) {
+        view.innerHTML = '<div class="empty">No division information was returned for the authenticated user.</div>';
+        return;
+      }
+      const agents = Array.isArray(state.divisionAgents) ? state.divisionAgents.filter((a) => !isOfflineMember(a)) : [];
+      const expanded = state.divisionExpanded;
+      const summary = `<table class="division-table"><thead><tr><th style="width:35%">Division</th><th style="width:18%">Logged In</th><th>Presence Breakdown</th></tr></thead><tbody>
+        <tr class="division-summary-row">
+          <td class="division-name-cell" data-expand-division="1"><div class="queue-name"><span class="queue-chevron">${expanded ? '⌄' : '›'}</span><span class="queue-name-text">${escapeHtml(d.name)}</span></div></td>
+          <td class="division-name-cell" data-expand-division="1"><strong>${agents.length}</strong></td>
+          <td class="division-presence-cell" data-expand-division="1">${divisionPresenceMarkup(agents)}</td>
+        </tr>
+        ${expanded ? `<tr class="division-agent-row"><td colspan="3"><div class="division-detail-wrap"><div class="division-detail-header"><div class="division-detail-title">Current agents in ${escapeHtml(d.name)}</div><div class="division-detail-meta">${state.divisionLoading ? 'Updating...' : `${agents.length} logged-in agents · Offline agents hidden`}</div></div>${state.divisionError ? `<div class="agent-error">${escapeHtml(state.divisionError)}</div>` : `<div class="division-agent-grid"><div class="head"><div>${divisionHeaderMarkup('Agent','agent')}</div><div>${divisionHeaderMarkup('Queue(s)','queue')}</div><div>${divisionHeaderMarkup('Status','status')}</div><div>${divisionHeaderMarkup('Status Since','since')}</div><div>${divisionHeaderMarkup('Duration','duration')}</div></div>${sortDivisionAgents(agents).map(divisionAgentRowMarkup).join('')}</div>`}</div></td></tr>` : ''}
+      </tbody></table>`;
+      view.innerHTML = summary;
+      view.querySelectorAll('[data-expand-division]').forEach((node) => node.addEventListener('click', () => toggleDivisionAgents()));
+      view.querySelectorAll('[data-division-agent-sort]').forEach((node) => node.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const key = node.getAttribute('data-division-agent-sort');
+        if (!key) return;
+        if (state.divisionAgentSort.key === key) state.divisionAgentSort.dir = state.divisionAgentSort.dir === 'asc' ? 'desc' : 'asc';
+        else {
+          state.divisionAgentSort.key = key;
+          state.divisionAgentSort.dir = (key === 'duration' || key === 'since') ? 'desc' : 'asc';
+        }
+        render();
+      }));
+    }
+
+    function renderModeToggle() {
+      const queueBtn = el('queueModeBtn');
+      const divisionBtn = el('divisionModeBtn');
+      const queueView = el('queueView');
+      const divisionView = el('divisionView');
+      if (!queueBtn || !divisionBtn || !queueView || !divisionView) return;
+      const isQueue = state.mode === 'queue';
+      queueBtn.classList.toggle('active', isQueue);
+      divisionBtn.classList.toggle('active', !isQueue);
+      queueBtn.setAttribute('aria-pressed', String(isQueue));
+      divisionBtn.setAttribute('aria-pressed', String(!isQueue));
+      queueView.style.display = isQueue ? '' : 'none';
+      divisionView.classList.toggle('active', !isQueue);
+    }
+
+    function loadCachedAgentQueues(clientId, userId) {
+      try {
+        const raw = JSON.parse(sessionStorage.getItem(DIVISION_QUEUE_CACHE_KEY) || '{}');
+        if (raw?.clientId === clientId && raw?.queues?.[userId]) return raw.queues[userId];
+      } catch {}
+      return null;
+    }
+
+    function saveCachedAgentQueues(clientId, userId, queues) {
+      try {
+        const raw = JSON.parse(sessionStorage.getItem(DIVISION_QUEUE_CACHE_KEY) || '{}');
+        const store = raw?.clientId === clientId && raw?.queues ? raw : { clientId, queues: {} };
+        store.queues[userId] = queues;
+        store.cachedAt = Date.now();
+        sessionStorage.setItem(DIVISION_QUEUE_CACHE_KEY, JSON.stringify(store));
+      } catch {}
+    }
+
+    async function getJoinedQueuesForUser(userId) {
+      const cfg = loadConfig();
+      const cached = loadCachedAgentQueues(cfg.clientId, userId);
+      if (cached) return cached;
+      const queues = await getAllPages(`/api/v2/users/${encodeURIComponent(userId)}/queues?joined=true`);
+      const names = queues.filter((q) => q?.id && q?.name).sort((a, b) => a.name.localeCompare(b.name)).map((q) => q.name);
+      saveCachedAgentQueues(cfg.clientId, userId, names);
+      return names;
+    }
+
+    async function loadDivisionUsers(divisionId) {
+      const all = [];
+      let pageNumber = 1;
+      while (true) {
+        const body = {
+          pageSize: 100,
+          pageNumber,
+          sortOrder: 'ASC',
+          sortBy: 'name',
+          query: [
+            { operator: 'AND', type: 'EXACT', fields: ['state'], values: ['active'] },
+            { operator: 'AND', type: 'EXACT', fields: ['divisionId'], value: divisionId },
+          ],
+          expand: ['routingStatus', 'primaryPresence', 'presence'],
+        };
+        const res = await apiFetch('/api/v2/users/search', { method: 'POST', body: JSON.stringify(body) });
+        const page = Array.isArray(res?.results) ? res.results : (Array.isArray(res?.entities) ? res.entities : []);
+        all.push(...page);
+        if (res?.nextUri || (typeof res?.pageCount === 'number' && pageNumber < res.pageCount) || (page.length === 100)) { pageNumber += 1; continue; }
+        break;
+      }
+      return all;
+    }
+
+    async function hydrateDivisionQueueNames(agents) {
+      const online = agents.filter((a) => !isOfflineMember(a));
+      const pending = online.filter((a) => String(routingStatusValue(a)).toUpperCase() !== 'OFF_QUEUE' && !loadCachedAgentQueues(loadConfig().clientId, a.id));
+      let index = 0;
+      const worker = async () => {
+        while (index < pending.length) {
+          const agent = pending[index++];
+          state.divisionQueueLoadingUsers.add(agent.id);
+          try {
+            agent.__joinedQueueNames = (await getJoinedQueuesForUser(agent.id)).join(', ');
+          } catch {
+            agent.__joinedQueueNames = '';
+          } finally {
+            state.divisionQueueLoadingUsers.delete(agent.id);
+          }
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(5, pending.length) }, worker));
+      for (const agent of online) {
+        if (agent.__joinedQueueNames === undefined) {
+          const cached = loadCachedAgentQueues(loadConfig().clientId, agent.id);
+          agent.__joinedQueueNames = String(routingStatusValue(agent)).toUpperCase() === 'OFF_QUEUE' ? '' : (cached || []).join(', ');
+        }
+      }
+    }
+
+    async function refreshDivisionAgents({ initial = false } = {}) {
+      const d = state.division || divisionFromUser(state.me);
+      if (!d) throw new Error('The authenticated user does not have a readable division assignment.');
+      state.division = d;
+      state.divisionLoading = true;
+      state.divisionError = '';
+      render();
+      try {
+        const all = await loadDivisionUsers(d.id);
+        const online = all.filter((a) => !isOfflineMember(a));
+        if (online.some((a) => memberOrganizationPresenceId(a))) await loadPresenceDefinitions();
+        await hydrateDivisionQueueNames(online);
+        state.divisionAgents = online;
+        if (initial) state.divisionExpanded = false;
+      } catch (err) {
+        state.divisionError = err?.message || String(err);
+      } finally {
+        state.divisionLoading = false;
+        state.lastRefresh = new Date();
+        render();
+      }
+    }
+
+    async function toggleDivisionAgents() {
+      if (state.divisionExpanded) {
+        state.divisionExpanded = false;
+        render();
+        return;
+      }
+      state.divisionExpanded = true;
+      render();
+      if (!state.divisionAgents.length) await refreshDivisionAgents();
+    }
+
+    async function switchMode(mode) {
+      if (mode === state.mode) return;
+      state.mode = mode;
+      clearError();
+      render();
+      try {
+        if (mode === 'division') {
+          state.division = divisionFromUser(state.me);
+          if (!state.division) throw new Error('No division was returned for the authenticated user.');
+          if (!state.divisionAgents.length) await refreshDivisionAgents();
+          startAutoRefresh();
+        } else {
+          await refreshQueueSummary({ refreshExpanded: true });
+          startAutoRefresh();
+        }
+      } catch (err) {
+        showError(err);
+      }
+    }
+
     function renderPager(totalPages) {
       const pager = el('pager');
       const pages = [];
@@ -1490,6 +1885,19 @@
     }
 
     function render() {
+      renderModeToggle();
+      if (state.mode === 'division') {
+        renderDivisionView();
+        const updated = state.lastRefresh ? state.lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Not connected';
+        el('footerText').textContent = state.token
+          ? `${state.divisionAgents.length} logged-in agents in ${state.division?.name || 'division'}. Last updated ${updated}. Auto refresh every 30 seconds.`
+          : 'Connect to Genesys Cloud to load division data.';
+        if (state.loading || state.divisionLoading) setConnectionPill('Refreshing...', 'warn');
+        else if (state.lastRefresh) setConnectionPill(`Live ${updated}`, 'good');
+        else if (state.token) setConnectionPill('Connected', 'good');
+        else setConnectionPill('Not connected', 'neutral');
+        return;
+      }
       const rows = el('rows');
       const totalPages = Math.max(1, Math.ceil(state.queues.length / PAGE_SIZE));
       state.page = Math.min(state.page, totalPages);
@@ -1627,6 +2035,7 @@
       render();
       try {
         await loadUserContext(forceContext);
+        state.division = divisionFromUser(state.me);
         if (!state.queues.length) {
           throw new Error(`No queue memberships were returned for ${state.me?.name || state.me?.email || state.me?.id}. Verify the user has routing queue membership and that the OAuth client has routing:queue:view or routing:queue:join.`);
         }
@@ -1634,6 +2043,8 @@
           state.expandedQueues = new Set();
           state.agentsByQueue.clear();
           state.agentErrors.clear();
+          state.divisionAgents = [];
+          state.divisionExpanded = false;
         }
         await refreshQueueSummary({ refreshExpanded: true });
         startAutoRefresh();
@@ -1646,7 +2057,9 @@
     function startAutoRefresh() {
       if (state.refreshTimer) clearInterval(state.refreshTimer);
       state.refreshTimer = setInterval(() => {
-        if (state.token?.access_token) refreshQueueSummary({ refreshExpanded: true }).catch(showError);
+        if (!state.token?.access_token) return;
+        if (state.mode === 'division') refreshDivisionAgents().catch(showError);
+        else refreshQueueSummary({ refreshExpanded: true }).catch(showError);
       }, REFRESH_MS);
     }
 
@@ -1723,6 +2136,15 @@
       state.agentErrors = new Map();
       state.page = 1;
       state.lastRefresh = null;
+      state.mode = 'queue';
+      state.division = null;
+      state.divisionAgents = [];
+      state.divisionExpanded = false;
+      state.divisionLoading = false;
+      state.divisionError = '';
+      state.divisionQueueNamesByUser = new Map();
+      state.divisionQueueLoadingUsers = new Set();
+      sessionStorage.removeItem(DIVISION_QUEUE_CACHE_KEY);
       if (state.refreshTimer) clearInterval(state.refreshTimer);
       state.refreshTimer = null;
       setOverlay(false);
@@ -1745,6 +2167,8 @@
       });
       el('logoutBtn').addEventListener('click', logout);
       el('clientId').addEventListener('input', () => saveClientId());
+      el('queueModeBtn').addEventListener('click', () => switchMode('queue'));
+      el('divisionModeBtn').addEventListener('click', () => switchMode('division'));
     }
 
     // Responsive layout is handled by CSS container queries on the dashboard table.
