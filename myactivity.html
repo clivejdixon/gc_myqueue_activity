@@ -1538,7 +1538,7 @@
       render();
     }
 
-    async function refreshQueueSummary() {
+    async function refreshQueueSummary({ refreshExpanded = true } = {}) {
       if (!state.token?.access_token) throw new Error('Missing access token.');
       const ids = state.queues.map((q) => q.id);
       const { statuses, media, serviceLevels } = await queryQueueObservations(ids);
@@ -1547,6 +1547,9 @@
       state.serviceLevelsByQueue = serviceLevels;
       state.lastRefresh = new Date();
       render();
+      if (refreshExpanded && state.expandedQueues.size) {
+        await refreshExpandedAgents();
+      }
     }
 
     async function loadDashboard({ forceContext = false, initial = false } = {}) {
@@ -1558,12 +1561,12 @@
         if (!state.queues.length) {
           throw new Error(`No queue memberships were returned for ${state.me?.name || state.me?.email || state.me?.id}. Verify the user has routing queue membership and that the OAuth client has routing:queue:view or routing:queue:join.`);
         }
-        await refreshQueueSummary();
         if (initial) {
           state.expandedQueues = new Set();
           state.agentsByQueue.clear();
           state.agentErrors.clear();
         }
+        await refreshQueueSummary({ refreshExpanded: true });
         startAutoRefresh();
       } finally {
         state.loading = false;
@@ -1574,7 +1577,7 @@
     function startAutoRefresh() {
       if (state.refreshTimer) clearInterval(state.refreshTimer);
       state.refreshTimer = setInterval(() => {
-        if (state.token?.access_token) refreshQueueSummary().catch(showError);
+        if (state.token?.access_token) refreshQueueSummary({ refreshExpanded: true }).catch(showError);
       }, REFRESH_MS);
     }
 
