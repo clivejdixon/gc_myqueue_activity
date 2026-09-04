@@ -920,8 +920,21 @@
           return;
         }
       } catch {}
-      const res = await apiFetch('/api/v2/presence/definitions');
-      const entities = Array.isArray(res?.entities) ? res.entities : [];
+      // Presence definitions are paginated. Secondary/custom statuses can easily
+      // fall beyond the first page, so load every page rather than relying on
+      // the endpoint default page size.
+      const entities = [];
+      let pageNumber = 1;
+      while (true) {
+        const res = await apiFetch(`/api/v2/presence/definitions?pageSize=100&pageNumber=${pageNumber}`);
+        const page = Array.isArray(res?.entities) ? res.entities : [];
+        entities.push(...page);
+        if (res?.nextUri) { pageNumber += 1; continue; }
+        if (typeof res?.pageCount === 'number' && pageNumber < res.pageCount) { pageNumber += 1; continue; }
+        if (typeof res?.total === 'number' && entities.length < res.total && page.length) { pageNumber += 1; continue; }
+        if (page.length === 100) { pageNumber += 1; continue; }
+        break;
+      }
       state.presenceDefinitions = new Map(entities.filter((d) => d?.id).map((d) => [String(d.id), d]));
       state.presenceDefinitionsLoaded = true;
       try {
@@ -1182,21 +1195,43 @@
         || null;
     }
 
+    function presenceDefinitionLabel(def) {
+      if (!def) return '';
+      if (def.name) return String(def.name);
+      if (def.displayName) return String(def.displayName);
+      const labels = def.languageLabels || def.labels || {};
+      const locale = (navigator.language || 'en-US').toLowerCase();
+      const exact = Object.entries(labels).find(([key]) => String(key).toLowerCase() === locale);
+      if (exact?.[1]) return String(exact[1]);
+      const lang = locale.split('-')[0];
+      const languageMatch = Object.entries(labels).find(([key]) => String(key).toLowerCase().split('-')[0] === lang);
+      if (languageMatch?.[1]) return String(languageMatch[1]);
+      const first = Object.values(labels).find(Boolean);
+      return first ? String(first) : '';
+    }
+
     function secondaryPresenceLabel(member) {
       const id = memberOrganizationPresenceId(member);
       if (!id) return '';
-      const embedded = presenceDefinition(member);
-      const embeddedLabel = embedded?.name || embedded?.displayName;
-      if (embeddedLabel) {
-        const primary = String(systemPresenceValue(member) || '').toUpperCase();
-        if (embeddedLabel.toUpperCase() !== primary && embeddedLabel.toUpperCase() !== normaliseStatusLabel(primary).toUpperCase()) return embeddedLabel;
-      }
-      const def = state.presenceDefinitions.get(String(id));
-      const label = def?.name || def?.displayName || '';
-      if (!label) return '';
       const primary = String(systemPresenceValue(member) || '').toUpperCase();
-      if (label.toUpperCase() === primary || label.toUpperCase() === normaliseStatusLabel(primary).toUpperCase()) return '';
-      return label;
+      const primaryLabel = normaliseStatusLabel(primary).toUpperCase();
+
+      // The presenceDefinition.id / organizationPresenceId identifies the
+      // organisation presence currently selected. For a secondary status this
+      // is the secondary definition ID, while systemPresence remains the parent
+      // status (for example BUSY). Resolve the ID against the complete org list.
+      const resolved = state.presenceDefinitions.get(String(id));
+      const resolvedLabel = presenceDefinitionLabel(resolved);
+      if (resolvedLabel && resolvedLabel.toUpperCase() !== primary && resolvedLabel.toUpperCase() !== primaryLabel) {
+        return resolvedLabel;
+      }
+
+      // Some member responses embed the full definition. Use that as a fallback.
+      const embeddedLabel = presenceDefinitionLabel(presenceDefinition(member));
+      if (embeddedLabel && embeddedLabel.toUpperCase() !== primary && embeddedLabel.toUpperCase() !== primaryLabel) {
+        return embeddedLabel;
+      }
+      return '';
     }
 
     function memberDisplayName(member) {
@@ -1344,13 +1379,12 @@
         if (entities.length < 100) break;
         pageNumber += 1;
       }
-      const needsPresenceDefinitionLookup = all.some((member) => {
-        const id = memberOrganizationPresenceId(member);
-        if (!id) return false;
-        const def = presenceDefinition(member);
-        return !(def?.name || def?.displayName);
-      });
-      if (needsPresenceDefinitionLookup) await loadPresenceDefinitions();
+      // Load the organisation presence dictionary once per session. This is
+      // required to translate a secondary presenceDefinition/organizationPresenceId
+      // into the administrator-defined secondary status label.
+      if (all.some((member) => memberOrganizationPresenceId(member))) {
+        await loadPresenceDefinitions();
+      }
       return all.sort((a, b) => memberDisplayName(a).localeCompare(memberDisplayName(b)));
     }
 
