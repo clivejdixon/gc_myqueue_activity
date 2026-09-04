@@ -1345,7 +1345,11 @@
       if (key === 'agent') return memberDisplayName(member).toLocaleLowerCase();
       if (key === 'status') return combined.label.toLocaleLowerCase();
       const t = since ? new Date(since).getTime() : 0;
-      return Number.isFinite(t) ? t : 0;
+      if (!Number.isFinite(t) || !t) return 0;
+      // Duration must sort by elapsed time, not by the raw status-start timestamp.
+      // A larger elapsed value means the agent has been in the status longer.
+      if (key === 'duration') return Date.now() - t;
+      return t;
     }
 
     function sortAgents(agents) {
