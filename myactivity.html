@@ -782,6 +782,82 @@
     .app.narrow-25 .division-agent-grid .agent-avatar { width: 18px; height: 18px; }
     .app.narrow-25 .division-agent-grid .agent-cell-name { gap: 3px; }
 
+    /* v2 Division responsive overrides: keep every Division and agent metric
+       visible while reducing column gaps/padding as the iframe becomes narrower.
+       Unlike the earlier version, Division Presence Breakdown is never hidden. */
+    .division-view { overflow-x: hidden; }
+    .division-table { width: 100%; min-width: 0; table-layout: fixed; }
+    .division-table th, .division-table td { min-width: 0; overflow: hidden; }
+    .division-table th:nth-child(1) { width: 30%; }
+    .division-table th:nth-child(2) { width: 14%; }
+    .division-table th:nth-child(3) { width: 56%; }
+    .division-summary-presence { min-width: 0; }
+    .division-summary-presence-labels { gap: clamp(4px, .45vw, 10px); min-width: 0; flex-wrap: wrap; }
+    .division-summary-presence-item { gap: clamp(2px, .3vw, 5px); font-size: clamp(8px, .7vw, 13px); }
+    .division-summary-bar { width: min(100%, 280px); max-width: 100%; }
+
+    .division-agent-grid {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      grid-template-columns: minmax(0, 25fr) minmax(0, 22fr) minmax(0, 29fr) minmax(0, 14fr) minmax(0, 10fr);
+    }
+    .division-agent-grid .head > div,
+    .division-agent-grid .row > div {
+      min-width: 0;
+      overflow: hidden;
+      padding-left: clamp(2px, .32vw, 7px);
+      padding-right: clamp(2px, .32vw, 7px);
+    }
+    .division-agent-grid .head > div { font-size: clamp(8px, .62vw, 10px); }
+    .division-agent-grid .row > div { font-size: clamp(8px, .68vw, 13px); }
+    .division-agent-grid .agent-cell-name { min-width: 0; gap: clamp(3px, .45vw, 8px); }
+    .division-agent-grid .agent-name,
+    .division-agent-grid .agent-status,
+    .division-agent-grid .agent-secondary-status,
+    .division-agent-grid .status-time,
+    .division-agent-grid .status-duration,
+    .division-agent-grid .division-queue-names {
+      max-width: 100%;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: inherit;
+    }
+
+    .app.narrow-50 .division-table th,
+    .app.narrow-50 .division-table td { padding-left: 3px; padding-right: 3px; }
+    .app.narrow-50 .division-table th:nth-child(1) { width: 34%; }
+    .app.narrow-50 .division-table th:nth-child(2) { width: 15%; }
+    .app.narrow-50 .division-table th:nth-child(3) { width: 51%; }
+    .app.narrow-50 .division-summary-presence-item { font-size: 10px; }
+    .app.narrow-50 .division-summary-bar { height: 8px; }
+    .app.narrow-50 .division-agent-grid { grid-template-columns: minmax(0, 24fr) minmax(0, 22fr) minmax(0, 30fr) minmax(0, 14fr) minmax(0, 10fr); }
+    .app.narrow-50 .division-agent-grid .head > div,
+    .app.narrow-50 .division-agent-grid .row > div { padding-left: 2px; padding-right: 2px; }
+
+    .app.narrow-25 .division-table th,
+    .app.narrow-25 .division-table td { padding-left: 1px; padding-right: 1px; }
+    .app.narrow-25 .division-table th:nth-child(1) { width: 36%; }
+    .app.narrow-25 .division-table th:nth-child(2) { width: 16%; }
+    .app.narrow-25 .division-table th:nth-child(3) { width: 48%; }
+    .app.narrow-25 .division-table thead th,
+    .app.narrow-25 .division-table tbody td { font-size: 8px; }
+    .app.narrow-25 .division-summary-presence-labels { gap: 2px; }
+    .app.narrow-25 .division-summary-presence-item { font-size: 7px; gap: 1px; }
+    .app.narrow-25 .division-summary-dot { width: 5px; height: 5px; }
+    .app.narrow-25 .division-summary-bar { height: 6px; }
+    .app.narrow-25 .division-agent-grid { grid-template-columns: minmax(0, 22fr) minmax(0, 21fr) minmax(0, 31fr) minmax(0, 15fr) minmax(0, 11fr); }
+    .app.narrow-25 .division-agent-grid .head > div,
+    .app.narrow-25 .division-agent-grid .row > div { padding-left: 1px; padding-right: 1px; }
+    .app.narrow-25 .division-agent-grid .agent-name,
+    .app.narrow-25 .division-agent-grid .agent-status,
+    .app.narrow-25 .division-agent-grid .agent-secondary-status,
+    .app.narrow-25 .division-agent-grid .status-time,
+    .app.narrow-25 .division-agent-grid .status-duration,
+    .app.narrow-25 .division-agent-grid .division-queue-names { font-size: 8px; }
+
   </style>
 </head>
 <body>
@@ -1677,14 +1753,16 @@
       let available = 0;
       let busy = 0;
       let notResponding = 0;
+      let onQueue = 0;
       for (const agent of agents) {
         const routing = String(routingStatusValue(agent)).toUpperCase();
+        if (routing !== 'OFF_QUEUE') onQueue += 1;
         if (routing === 'NOT_RESPONDING') notResponding += 1;
         const presence = String(systemPresenceValue(agent)).toUpperCase();
         if (presence === 'AVAILABLE' || presence === 'ON_QUEUE') available += 1;
         else if (presence === 'BUSY' || presence === 'AWAY' || presence === 'MEAL' || presence === 'BREAK' || presence === 'TRAINING' || presence === 'MEETING' || presence === 'DO_NOT_DISTURB') busy += 1;
       }
-      return { available, busy, notResponding };
+      return { available, busy, notResponding, onQueue };
     }
 
     function divisionPresenceMarkup(agents) {
@@ -1694,7 +1772,7 @@
       const bar = total
         ? `<div class="avail" style="width:${Math.max(c.available / denom * 100, 2)}%"></div><div class="busy" style="width:${Math.max(c.busy / denom * 100, 2)}%"></div><div class="nr" style="width:${Math.max(c.notResponding / denom * 100, 2)}%"></div>`
         : '<div class="avail" style="width:100%"></div>';
-      return `<div class="division-summary-presence"><div class="division-summary-presence-labels"><span class="division-summary-presence-item"><span class="division-summary-dot" style="background:#62b246"></span>Available ${c.available}</span><span class="division-summary-presence-item"><span class="division-summary-dot" style="background:#f59e0b"></span>Busy ${c.busy}</span><span class="division-summary-presence-item"><span class="division-summary-dot" style="background:#ef4444"></span>Not Responding ${c.notResponding}</span></div><div class="division-summary-bar">${bar}</div></div>`;
+      return `<div class="division-summary-presence"><div class="division-summary-presence-labels"><span class="division-summary-presence-item division-onqueue"><span class="division-summary-dot" style="background:#2563eb"></span>On Queue ${c.onQueue}</span><span class="division-summary-presence-item"><span class="division-summary-dot" style="background:#62b246"></span>Available ${c.available}</span><span class="division-summary-presence-item"><span class="division-summary-dot" style="background:#f59e0b"></span>Busy ${c.busy}</span><span class="division-summary-presence-item"><span class="division-summary-dot" style="background:#ef4444"></span>Not Responding ${c.notResponding}</span></div><div class="division-summary-bar">${bar}</div></div>`;
     }
 
     function divisionAgentSortValue(member, key) {
