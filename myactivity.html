@@ -872,11 +872,7 @@
           </div>
         </div>
         <div class="status-row">
-          <div class="client-group">
-            <label class="tiny" for="clientId" style="margin-right:4px; color: var(--muted);">Client ID</label>
-            <input class="client-input" id="clientId" placeholder="Paste Genesys Cloud OAuth Client ID" autocomplete="off" />
-            <button class="primary-btn" id="connectBtn">Connect</button>
-          </div>
+          <div class="client-group" aria-hidden="true"></div>
           <span class="pill" id="lastUpdatedPill"><span class="dot"></span>Not connected</span>
           <button class="secondary-btn" id="refreshBtn" title="Refresh">Refresh</button>
           <button class="secondary-btn" id="logoutBtn" title="Clear tokens">Logout</button>
@@ -937,6 +933,11 @@
     const PRESENCE_DEF_CACHE_KEY = 'genesys.queue.activity.presence-defs.v1';
     const DIVISION_QUEUE_CACHE_KEY = 'genesys.queue.activity.division-agent-queues.v1';
 
+    // Public OAuth client ID for this deployed application. Replace the placeholder
+    // once with the customer's Genesys Cloud OAuth Client ID. A Client ID is not a
+    // client secret and is safe to ship with a browser/PKCE application.
+    const CLIENT_ID = 'REPLACE_WITH_YOUR_GENESYS_OAUTH_CLIENT_ID';
+
     const LOGIN_HOST = 'login.mypurecloud.de';
     const API_HOST = 'api.mypurecloud.de';
     const PAGE_SIZE = 20;
@@ -975,33 +976,12 @@
     };
 
     const DEFAULTS = {
-      clientId: '',
+      clientId: CLIENT_ID,
       redirectUri: window.location.href.split('?')[0].split('#')[0],
     };
 
     function loadConfig() {
-      try {
-        return { ...DEFAULTS, ...(JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')) };
-      } catch {
-        return { ...DEFAULTS };
-      }
-    }
-
-    function saveConfig(cfg) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
-    }
-
-    function applyConfigToForm() {
-      const cfg = loadConfig();
-      el('clientId').value = cfg.clientId || '';
-    }
-
-    function saveClientId() {
-      const cfg = loadConfig();
-      cfg.clientId = el('clientId').value.trim();
-      cfg.redirectUri = DEFAULTS.redirectUri;
-      saveConfig(cfg);
-      return cfg;
+      return { ...DEFAULTS };
     }
 
     function setBanner(html, kind = 'notice') {
@@ -2212,8 +2192,10 @@
 
     async function connectGenesys() {
       clearError();
-      const cfg = saveClientId();
-      if (!cfg.clientId) throw new Error('Please enter a Genesys Cloud Client ID.');
+      const cfg = loadConfig();
+      if (!cfg.clientId || cfg.clientId === 'REPLACE_WITH_YOUR_GENESYS_OAUTH_CLIENT_ID') {
+        throw new Error('Set CLIENT_ID in the HTML before deploying the application.');
+      }
       const { verifier, challenge } = await createPkcePair();
       const oauthState = randomString(32);
       sessionStorage.setItem(VERIFIER_KEY, verifier);
@@ -2293,19 +2275,15 @@
     }
 
     function wireEvents() {
-      el('connectBtn').addEventListener('click', async () => {
-        try { await connectGenesys(); } catch (err) { setOverlay(false); showError(err); }
-      });
       el('refreshBtn').addEventListener('click', async () => {
         try {
           if (!state.token?.access_token) return;
-          await refreshQueueSummary();
+          await refreshCurrentView();
         } catch (err) {
           showError(err);
         }
       });
       el('logoutBtn').addEventListener('click', logout);
-      el('clientId').addEventListener('input', () => saveClientId());
       el('queueModeBtn').addEventListener('click', () => switchMode('queue'));
       el('divisionModeBtn').addEventListener('click', () => switchMode('division'));
     }
@@ -2338,7 +2316,6 @@
 
     async function init() {
       startResponsiveObserver();
-      applyConfigToForm();
       restoreSession();
       wireEvents();
       startDurationTicker();
@@ -2349,10 +2326,21 @@
           await loadDashboard({ initial: true });
           return;
         } catch (err) {
-          showError(err);
+          // If the stored session cannot be restored, clear it and fall through
+          // to the automatic PKCE connection attempt.
+          localStorage.removeItem(TOKEN_KEY);
+          state.token = null;
+          setConnectionPill('Connecting...', 'warn');
         }
       }
-      render();
+      try {
+        setConnectionPill('Connecting...', 'warn');
+        await connectGenesys();
+      } catch (err) {
+        setOverlay(false);
+        showError(err);
+        render();
+      }
     }
 
     init().catch(showError);
