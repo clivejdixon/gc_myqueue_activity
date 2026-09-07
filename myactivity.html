@@ -936,7 +936,7 @@
     // Public OAuth client ID for this deployed application. Replace the placeholder
     // once with the customer's Genesys Cloud OAuth Client ID. A Client ID is not a
     // client secret and is safe to ship with a browser/PKCE application.
-    const CLIENT_ID = 'REPLACE_WITH_YOUR_GENESYS_OAUTH_CLIENT_ID';
+    const CLIENT_ID = '2abc4be0-f4a2-41bf-946e-b821a5de8a10';
 
     const LOGIN_HOST = 'login.mypurecloud.de';
     const API_HOST = 'api.mypurecloud.de';
@@ -1160,7 +1160,9 @@
     }
 
     async function getMe() {
-      return apiFetch('/api/v2/users/me');
+      // Division is not guaranteed to be present in the default /users/me payload.
+      // Request it explicitly because Division mode depends on this object.
+      return apiFetch('/api/v2/users/me?expand=division');
     }
 
     async function getMemberQueuesForUser(userId) {
@@ -1178,6 +1180,12 @@
         if (cached) {
           state.me = cached.user;
           state.queues = cached.queues;
+          // Older cached user objects may pre-date the explicit division expand.
+          // Refresh only the user object when Division information is absent.
+          if (!divisionFromUser(state.me)) {
+            state.me = await getMe();
+            saveCachedUserAndQueues(cfg.clientId, state.me, state.queues);
+          }
           return;
         }
       }
@@ -1962,6 +1970,7 @@
     }
 
     async function switchMode(mode) {
+      if (!(await ensureAuthenticated())) return;
       if (mode === state.mode) return;
       state.mode = mode;
       clearError();
@@ -1969,6 +1978,12 @@
       try {
         if (mode === 'division') {
           state.division = divisionFromUser(state.me);
+          if (!state.division) {
+            // Force a current /users/me payload with division expanded before failing.
+            state.me = await getMe();
+            state.division = divisionFromUser(state.me);
+            saveCachedUserAndQueues(loadConfig().clientId, state.me, state.queues);
+          }
           if (!state.division) throw new Error('No division was returned for the authenticated user.');
           if (!state.divisionAgents.length) await refreshDivisionAgents();
           startAutoRefresh();
@@ -2134,6 +2149,32 @@
       render();
     }
 
+    async function ensureAuthenticated() {
+      if (state.token?.access_token) return true;
+      // Do not let Queue/Division refresh paths run without a token. Start PKCE
+      // instead; navigation will continue after the OAuth callback.
+      setConnectionPill('Connecting...', 'warn');
+      await connectGenesys();
+      return false;
+    }
+
+    async function refreshCurrentView() {
+      if (!(await ensureAuthenticated())) return;
+      if (state.mode === 'division') {
+        if (!state.me) await loadUserContext(false);
+        if (!state.division) {
+          state.me = await getMe();
+          state.division = divisionFromUser(state.me);
+          saveCachedUserAndQueues(loadConfig().clientId, state.me, state.queues);
+        }
+        if (!state.division) throw new Error('No division was returned for the authenticated user.');
+        await refreshDivisionAgents();
+      } else {
+        if (!state.queues.length) await loadUserContext(false);
+        await refreshQueueSummary({ refreshExpanded: true });
+      }
+    }
+
     async function refreshQueueSummary({ refreshExpanded = true } = {}) {
       if (!state.token?.access_token) throw new Error('Missing access token.');
       const ids = state.queues.map((q) => q.id);
@@ -2177,8 +2218,7 @@
       if (state.refreshTimer) clearInterval(state.refreshTimer);
       state.refreshTimer = setInterval(() => {
         if (!state.token?.access_token) return;
-        if (state.mode === 'division') refreshDivisionAgents().catch(showError);
-        else refreshQueueSummary({ refreshExpanded: true }).catch(showError);
+        refreshCurrentView().catch(showError);
       }, REFRESH_MS);
     }
 
@@ -2226,6 +2266,8 @@
       const token = await completeAuthFromCallback(window.location.href);
       state.token = token;
       localStorage.setItem(TOKEN_KEY, JSON.stringify(token));
+      sessionStorage.removeItem(USER_CACHE_KEY);
+      sessionStorage.removeItem(QUEUE_CACHE_KEY);
       window.history.replaceState({}, document.title, window.location.pathname);
       await loadDashboard({ forceContext: true, initial: true });
       return true;
