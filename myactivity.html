@@ -629,7 +629,7 @@
       color: #1d4ed8;
       box-shadow: 0 2px 6px rgba(15,23,42,.08);
     }
-    .division-view { display: none; height: 100%; overflow: auto; }
+    .division-view { display: none; width: 100%; min-width: 0; height: 100%; overflow: auto; }
     .division-view.active { display: block; }
     .division-table {
       width: 100%;
@@ -664,7 +664,7 @@
     }
     .division-detail-header {
       display: flex; justify-content: space-between; align-items: center;
-      gap: 10px; margin-bottom: 8px;
+      gap: 10px; margin-bottom: 8px; min-width: 0;
     }
     .division-detail-title { font-size: clamp(11px, .82vw, 15px); font-weight: 800; color: #334155; }
     .division-detail-meta { font-size: clamp(8px, .65vw, 12px); color: var(--muted); white-space: nowrap; }
@@ -710,16 +710,77 @@
     @media (max-width: 720px) {
       .view-toggle button { padding: 6px 9px; font-size: 12px; }
     }
+
+    /* Division view responsive layout. The division summary follows the same
+       width-aware model as Queue view: padding contracts first, then the
+       Presence Breakdown is removed at the narrowest width so the remaining
+       summary fields retain usable space. */
+    .division-table { width: 100%; max-width: 100%; table-layout: fixed; }
+    .division-table th, .division-table td { min-width: 0; }
+    .division-table th:nth-child(1) { width: 30%; }
+    .division-table th:nth-child(2) { width: 18%; }
+    .division-table th:nth-child(3) { width: 52%; }
+
+    .app.narrow-50 .division-view { overflow-x: hidden; }
+    .app.narrow-50 .division-table th,
+    .app.narrow-50 .division-table td {
+      padding-left: 5px;
+      padding-right: 5px;
+    }
+    .app.narrow-50 .division-table th:nth-child(1) { width: 34%; }
+    .app.narrow-50 .division-table th:nth-child(2) { width: 18%; }
+    .app.narrow-50 .division-table th:nth-child(3) { width: 48%; }
+    .app.narrow-50 .division-table thead th,
+    .app.narrow-50 .division-table tbody td { font-size: 11px; }
+    .app.narrow-50 .division-summary-presence-labels { gap: 5px; }
+    .app.narrow-50 .division-summary-presence-item { gap: 3px; }
+    .app.narrow-50 .division-summary-bar { max-width: 180px; }
+
+    /* At the narrowest size keep the essential Division + Logged In data and
+       remove Presence Breakdown, matching the Queue view behaviour. */
+    .app.narrow-25 .division-table th:nth-child(3),
+    .app.narrow-25 .division-table td:nth-child(3) { display: none; }
+    .app.narrow-25 .division-table th:nth-child(1) { width: 72%; }
+    .app.narrow-25 .division-table th:nth-child(2) { width: 28%; }
+    .app.narrow-25 .division-table th,
+    .app.narrow-25 .division-table td {
+      padding-left: 2px;
+      padding-right: 2px;
+    }
+    .app.narrow-25 .division-table thead th,
+    .app.narrow-25 .division-table tbody td { font-size: 9px; }
+    .app.narrow-25 .division-name-cell .queue-name { gap: 3px; }
+    .app.narrow-25 .division-detail-wrap { padding: 6px 4px 7px; }
+
+    /* Division agent detail: all fields remain visible at all widths. The
+       grid contracts its column allocation and padding instead of hiding
+       information, just as requested for the Queue agent view. */
+    .division-agent-grid {
+      min-width: 0;
+      width: 100%;
+      grid-template-columns: minmax(0, 24fr) minmax(0, 22fr) minmax(0, 30fr) minmax(0, 14fr) minmax(0, 10fr);
+    }
+    .division-agent-grid .head > div,
+    .division-agent-grid .row > div { min-width: 0; }
     .app.narrow-50 .division-detail-wrap { padding-left: 8px; padding-right: 8px; }
-    .app.narrow-50 .division-agent-grid { grid-template-columns: minmax(0,24fr) minmax(0,20fr) minmax(0,30fr) minmax(0,14fr) minmax(0,12fr); }
+    .app.narrow-50 .division-agent-grid { grid-template-columns: minmax(0,23fr) minmax(0,21fr) minmax(0,31fr) minmax(0,14fr) minmax(0,11fr); }
     .app.narrow-50 .division-agent-grid .head > div,
     .app.narrow-50 .division-agent-grid .row > div { padding-left: 3px; padding-right: 3px; }
     .app.narrow-50 .division-agent-grid .head > div,
     .app.narrow-50 .division-agent-grid .row > div { font-size: 10px; }
-    .app.narrow-25 .division-detail-wrap { padding: 6px 4px 7px; }
-    .app.narrow-25 .division-agent-grid { grid-template-columns: minmax(0,22fr) minmax(0,21fr) minmax(0,29fr) minmax(0,15fr) minmax(0,13fr); }
+    .app.narrow-50 .division-agent-grid .agent-avatar { width: 22px; height: 22px; }
+    .app.narrow-25 .division-detail-wrap { padding: 6px 3px 7px; }
+    .app.narrow-25 .division-agent-grid { grid-template-columns: minmax(0,21fr) minmax(0,20fr) minmax(0,31fr) minmax(0,16fr) minmax(0,12fr); }
     .app.narrow-25 .division-agent-grid .head > div,
     .app.narrow-25 .division-agent-grid .row > div { padding-left: 2px; padding-right: 2px; font-size: 9px; }
+    .app.narrow-25 .division-agent-grid .agent-name,
+    .app.narrow-25 .division-agent-grid .agent-status,
+    .app.narrow-25 .division-agent-grid .agent-secondary-status,
+    .app.narrow-25 .division-agent-grid .status-time,
+    .app.narrow-25 .division-agent-grid .status-duration,
+    .app.narrow-25 .division-agent-grid .division-queue-names { font-size: 9px; }
+    .app.narrow-25 .division-agent-grid .agent-avatar { width: 18px; height: 18px; }
+    .app.narrow-25 .division-agent-grid .agent-cell-name { gap: 3px; }
 
   </style>
 </head>
